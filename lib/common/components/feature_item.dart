@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
-class ListingCard extends StatelessWidget {
+/// A small widget that displays an icon with text, used for property features
+/// like "3 Bed", "2 Bath", "WiFi", etc.
+class FeatureItem extends StatelessWidget {
   final IconData icon;
   final String text;
   final ColorScheme colorScheme;
 
-  const ListingCard({
+  const FeatureItem({
     super.key,
     required this.icon,
     required this.text,

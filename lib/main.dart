@@ -1,5 +1,5 @@
+import 'package:bashakhojo/core/main_shell.dart';
 import 'package:bashakhojo/pages/auth/auth.dart';
-import 'package:bashakhojo/pages/home/home.dart';
 import 'package:bashakhojo/services/supabase_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -43,7 +43,7 @@ class AuthGate extends StatelessWidget {
         final session = SupabaseService.client.auth.currentSession;
 
         if (session != null) {
-          return const Home();
+          return const MainShell();
         }
 
         return const Auth();
