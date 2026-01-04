@@ -8,6 +8,7 @@ class CustomTextField extends StatelessWidget {
   final bool isObscure;
   final VoidCallback? onTogglePassword;
   final TextInputType inputType;
+  final TextEditingController? controller;
 
   const CustomTextField({
     super.key,
@@ -18,6 +19,7 @@ class CustomTextField extends StatelessWidget {
     this.isObscure = false,
     this.onTogglePassword,
     this.inputType = TextInputType.text,
+    this.controller,
   });
 
   @override
@@ -40,6 +42,7 @@ class CustomTextField extends StatelessWidget {
           ),
         ),
         TextFormField(
+          controller: controller,
           obscureText: isObscure,
           keyboardType: inputType,
           style: TextStyle(

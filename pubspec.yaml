@@ -37,6 +37,7 @@ dependencies:
   flutter_native_splash: ^2.4.7
   fluentui_icons: ^1.0.0
   supabase_flutter: ^2.12.0
+  flutter_dotenv: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -63,6 +64,7 @@ flutter:
   assets:
     - assets/logo/
     - assets/image/
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -1,3 +1,4 @@
+import 'package:bashakhojo/pages/auth/login.dart';
 import 'package:bashakhojo/pages/auth/signup.dart';
 import 'package:flutter/material.dart';
 
@@ -102,7 +103,7 @@ class Login extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const Signup(),
+                                  builder: (context) => const LoginPage(),
                                 ),
                               );
                             },
