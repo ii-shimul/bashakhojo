@@ -3,14 +3,14 @@ import 'package:bashakhojo/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import '../../common/widgets/custom_text_field.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class Login extends StatefulWidget {
+  const Login({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<Login> createState() => _LoginState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginState extends State<Login> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
@@ -42,8 +42,10 @@ class _LoginPageState extends State<LoginPage> {
 
       if (response.user != null) {
         _showSnackBar('Login successful!', isError: false);
-        // Navigate to home page and clear the navigation stack
-        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        // Pop back to AuthGate which will show Home
+        if (mounted) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
       } else {
         _showSnackBar('Login failed. Please try again.');
       }

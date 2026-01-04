@@ -2,8 +2,8 @@ import 'package:bashakhojo/pages/auth/login.dart';
 import 'package:bashakhojo/pages/auth/signup.dart';
 import 'package:flutter/material.dart';
 
-class Login extends StatelessWidget {
-  const Login({super.key});
+class Auth extends StatelessWidget {
+  const Auth({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +103,7 @@ class Login extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const LoginPage(),
+                                  builder: (context) => const Login(),
                                 ),
                               );
                             },

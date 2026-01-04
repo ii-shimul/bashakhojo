@@ -53,12 +53,11 @@ class _SignupState extends State<Signup> {
       if (!mounted) return;
 
       if (response.user != null) {
-        _showSnackBar(
-          'Account created successfully! Please check your email to verify.',
-          isError: false,
-        );
-        // Navigate to home page and clear the navigation stack
-        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        _showSnackBar('Account created successfully!', isError: false);
+        // Pop back to AuthGate which will show Home
+        if (mounted) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
       } else {
         _showSnackBar('Sign up failed. Please try again.');
       }
@@ -287,7 +286,7 @@ class _SignupState extends State<Signup> {
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const LoginPage(),
+                                builder: (context) => const Login(),
                               ),
                             );
                           },
