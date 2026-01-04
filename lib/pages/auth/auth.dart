@@ -1,3 +1,4 @@
+import 'package:bashakhojo/pages/auth/signup.dart';
 import 'package:flutter/material.dart';
 
 class Login extends StatelessWidget {
@@ -73,7 +74,14 @@ class Login extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           ElevatedButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const Signup(),
+                                ),
+                              );
+                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: colors.primary,
                               foregroundColor: Colors.white,
@@ -85,12 +93,19 @@ class Login extends StatelessWidget {
                               ),
                             ),
                             child: Text(
-                              "Signup",
+                              "Sign Up",
                               style: TextStyle(fontSize: 18),
                             ),
                           ),
                           TextButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const Signup(),
+                                ),
+                              );
+                            },
                             style: TextButton.styleFrom(
                               foregroundColor: colors.primary,
                               backgroundColor: colors.primary.withValues(
