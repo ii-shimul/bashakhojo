@@ -96,7 +96,7 @@ class _SavedScreenState extends State<SavedScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Saved Properties",
+                    "Saved Listings",
                     style: textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: colorScheme.onSurface,

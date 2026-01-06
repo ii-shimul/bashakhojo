@@ -104,6 +104,12 @@ class PropertyService {
       }
     }
 
+    // Remove property from all users' saved_properties arrays
+    await _client.rpc(
+      'remove_property_from_saved',
+      params: {'property_id_to_remove': propertyId},
+    );
+
     await _client.from('properties').delete().eq('id', propertyId);
   }
 }

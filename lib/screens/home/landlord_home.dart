@@ -145,7 +145,7 @@ class _LandlordHomeScreenState extends State<LandlordHomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Your Properties',
+                      'Your Listings',
                       style: textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
