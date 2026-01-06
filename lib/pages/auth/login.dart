@@ -2,6 +2,7 @@ import 'package:bashakhojo/pages/auth/signup.dart';
 import 'package:bashakhojo/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import '../../common/widgets/custom_text_field.dart';
+import '../../common/widgets/custom_snackbar.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -29,7 +30,7 @@ class _LoginState extends State<Login> {
     final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      _showSnackBar('Please fill in all fields');
+      CustomSnackbar.show(context, 'Please fill in all fields');
       return;
     }
 
@@ -41,34 +42,22 @@ class _LoginState extends State<Login> {
       if (!mounted) return;
 
       if (response.user != null) {
-        _showSnackBar('Login successful!', isError: false);
+        CustomSnackbar.show(context, 'Login successful!', isError: false);
         // Pop back to AuthGate which will show Home
         if (mounted) {
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
       } else {
-        _showSnackBar('Login failed. Please try again.');
+        CustomSnackbar.show(context, 'Login failed. Please try again.');
       }
     } catch (e) {
       if (!mounted) return;
-      _showSnackBar(e.toString());
+      CustomSnackbar.show(context, e.toString());
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  void _showSnackBar(String message, {bool isError = true}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red.shade600 : Colors.green.shade600,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
   }
 
   @override

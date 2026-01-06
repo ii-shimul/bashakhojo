@@ -1,7 +1,10 @@
+import 'package:bashakhojo/common/widgets/custom_snackbar.dart';
 import 'package:bashakhojo/pages/home/home.dart';
+import 'package:bashakhojo/pages/property_details/property_details.dart';
+import 'package:bashakhojo/services/user_service.dart';
 import 'package:flutter/material.dart';
 
-class PropertyCard extends StatelessWidget {
+class PropertyCard extends StatefulWidget {
   final PropertyData property;
   final ColorScheme colorScheme;
   final TextTheme textTheme;
@@ -14,7 +17,70 @@ class PropertyCard extends StatelessWidget {
   });
 
   @override
+  State<PropertyCard> createState() => _PropertyCardState();
+}
+
+class _PropertyCardState extends State<PropertyCard> {
+  bool _isSaved = false;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfSaved();
+  }
+
+  Future<void> _checkIfSaved() async {
+    if (widget.property.id == null) return;
+    final saved = await UserService.isPropertySaved(widget.property.id!);
+    if (mounted) {
+      setState(() => _isSaved = saved);
+    }
+  }
+
+  Future<void> _toggleSave() async {
+    if (widget.property.id == null || _isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      if (_isSaved) {
+        await UserService.unsaveProperty(widget.property.id!);
+        if (mounted) {
+          setState(() => _isSaved = false);
+          CustomSnackbar.show(
+            context,
+            'Property removed from saved',
+            isError: false,
+          );
+        }
+      } else {
+        await UserService.saveProperty(widget.property.id!);
+        if (mounted) {
+          setState(() => _isSaved = true);
+          CustomSnackbar.show(
+            context,
+            'Property saved successfully',
+            isError: false,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomSnackbar.show(context, 'Failed to save: ${e.toString()}');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final colorScheme = widget.colorScheme;
+    final textTheme = widget.textTheme;
+    final property = widget.property;
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -30,60 +96,76 @@ class PropertyCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       child: Column(
         children: [
-          // Image Section
           Stack(
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: AspectRatio(
                   aspectRatio: 4 / 3,
-                  child: Image.network(
-                    property.imageUrl,
-                    fit: BoxFit.cover,
-                    frameBuilder:
-                        (context, child, frame, wasSynchronouslyLoaded) {
-                          if (wasSynchronouslyLoaded) return child;
-                          return AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            child: frame != null
-                                ? child
-                                : Container(
-                                    color: colorScheme.surfaceContainerHighest,
-                                    child: Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                    ),
+                    child: Image.network(
+                      property.imageUrl,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      frameBuilder:
+                          (context, child, frame, wasSynchronouslyLoaded) {
+                            if (wasSynchronouslyLoaded) return child;
+                            return AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 200),
+                              child: frame != null
+                                  ? child
+                                  : Center(
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
                                         color: colorScheme.primary,
                                       ),
                                     ),
-                                  ),
-                          );
-                        },
-                    errorBuilder: (_, __, ___) => Container(
-                      color: colorScheme.surfaceContainerHighest,
-                      child: Icon(
-                        Icons.broken_image_outlined,
-                        size: 48,
-                        color: colorScheme.onSurfaceVariant,
+                            );
+                          },
+                      errorBuilder: (_, __, ___) => Center(
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          size: 48,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-              // Favorite Button
               Positioned(
                 top: 12,
                 right: 12,
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.bookmark_add_outlined,
-                    color: Colors.tealAccent,
-                    size: 18,
+                child: GestureDetector(
+                  onTap: _toggleSave,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: _isSaved
+                          ? colorScheme.primary
+                          : colorScheme.primary.withValues(alpha: 0.7),
+                      shape: BoxShape.circle,
+                    ),
+                    child: _isLoading
+                        ? Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Icon(
+                            _isSaved
+                                ? Icons.bookmark
+                                : Icons.bookmark_add_outlined,
+                            color: _isSaved ? Colors.white : Colors.tealAccent,
+                            size: 18,
+                          ),
                   ),
                 ),
               ),
@@ -92,7 +174,6 @@ class PropertyCard extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Details Section
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Column(
@@ -148,7 +229,6 @@ class PropertyCard extends StatelessWidget {
 
                 const SizedBox(height: 12),
 
-                // Location
                 Row(
                   children: [
                     Icon(
@@ -178,13 +258,20 @@ class PropertyCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Features & Action Button
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(child: Row(children: _buildFeatures())),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                PropertyDetails(property: property),
+                          ),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: colorScheme.primary,
                         foregroundColor: colorScheme.onPrimary,
@@ -216,11 +303,12 @@ class PropertyCard extends StatelessWidget {
   }
 
   List<Widget> _buildFeatures() {
+    final property = widget.property;
+    final colorScheme = widget.colorScheme;
     final isApartment =
         property.category == 'family' || property.category == 'bachelor';
 
     if (isApartment) {
-      // Show bedroom and bathroom count for apartments
       return [
         if (property.bedroomCount != null)
           _FeatureText(
@@ -234,30 +322,14 @@ class PropertyCard extends StatelessWidget {
           ),
       ];
     } else {
-      // Show first two amenities for mess
       final amenities = property.amenities ?? [];
       return amenities
           .take(2)
           .map(
-            (amenity) => _FeatureText(
-              text: _formatAmenity(amenity),
-              colorScheme: colorScheme,
-            ),
+            (amenity) => _FeatureText(text: amenity, colorScheme: colorScheme),
           )
           .toList();
     }
-  }
-
-  String _formatAmenity(String amenity) {
-    // Capitalize first letter and replace underscores
-    return amenity
-        .replaceAll('_', ' ')
-        .split(' ')
-        .map((word) {
-          if (word.isEmpty) return word;
-          return word[0].toUpperCase() + word.substring(1);
-        })
-        .join(' ');
   }
 }
 

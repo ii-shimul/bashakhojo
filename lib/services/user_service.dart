@@ -28,4 +28,65 @@ class UserService {
     if (user == null) throw Exception('User not authenticated');
     await _client.from('profiles').update({'role': role}).eq('id', user.id);
   }
+
+  static Future<void> saveProperty(String propertyId) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('User not authenticated');
+
+    final profile = await _client
+        .from('profiles')
+        .select('saved_properties')
+        .eq('id', user.id)
+        .single();
+
+    final List<String> savedProperties = List<String>.from(
+      profile['saved_properties'] ?? [],
+    );
+
+    if (!savedProperties.contains(propertyId)) {
+      savedProperties.add(propertyId);
+      await _client
+          .from('profiles')
+          .update({'saved_properties': savedProperties})
+          .eq('id', user.id);
+    }
+  }
+
+  static Future<void> unsaveProperty(String propertyId) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('User not authenticated');
+
+    final profile = await _client
+        .from('profiles')
+        .select('saved_properties')
+        .eq('id', user.id)
+        .single();
+
+    final List<String> savedProperties = List<String>.from(
+      profile['saved_properties'] ?? [],
+    );
+
+    savedProperties.remove(propertyId);
+    await _client
+        .from('profiles')
+        .update({'saved_properties': savedProperties})
+        .eq('id', user.id);
+  }
+
+  static Future<bool> isPropertySaved(String propertyId) async {
+    final user = _client.auth.currentUser;
+    if (user == null) return false;
+
+    final profile = await _client
+        .from('profiles')
+        .select('saved_properties')
+        .eq('id', user.id)
+        .single();
+
+    final List<String> savedProperties = List<String>.from(
+      profile['saved_properties'] ?? [],
+    );
+
+    return savedProperties.contains(propertyId);
+  }
 }

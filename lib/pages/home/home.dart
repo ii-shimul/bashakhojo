@@ -105,18 +105,24 @@ class _HomeScreenState extends State<HomeScreen> {
               separatorBuilder: (_, __) => const SizedBox(height: 20),
               itemBuilder: (context, index) {
                 final property = _properties[index];
+                final images =
+                    (property['images'] as List?)?.cast<String>() ?? [];
                 return PropertyCard(
                   property: PropertyData(
+                    id: property['id'],
                     title: property['title'] ?? '',
                     category: property['category'] ?? '',
                     price: '৳${property['price']?.toStringAsFixed(0) ?? '0'}',
                     location: property['address'] ?? property['city'] ?? '',
-                    imageUrl: (property['images'] as List?)?.isNotEmpty == true
-                        ? property['images'][0]
+                    imageUrl: images.isNotEmpty
+                        ? images[0]
                         : 'https://placehold.co/600x400/e6e6e6/png',
                     bedroomCount: property['bedroom_count'],
                     bathroomCount: property['bathroom_count'],
                     amenities: (property['amenities'] as List?)?.cast<String>(),
+                    description: property['description'],
+                    images: images,
+                    ownerId: property['owner_id'],
                   ),
                   colorScheme: colorScheme,
                   textTheme: textTheme,
@@ -139,6 +145,7 @@ class _Category {
 }
 
 class PropertyData {
+  final String? id;
   final String title;
   final String category;
   final String price;
@@ -147,10 +154,14 @@ class PropertyData {
   final int? bedroomCount;
   final int? bathroomCount;
   final List<String>? amenities;
+  final String? description;
+  final List<String>? images;
+  final String? ownerId;
   final bool isVerified;
   final bool isPopular;
 
   const PropertyData({
+    this.id,
     required this.title,
     required this.category,
     required this.price,
@@ -159,6 +170,9 @@ class PropertyData {
     this.bedroomCount,
     this.bathroomCount,
     this.amenities,
+    this.description,
+    this.images,
+    this.ownerId,
     this.isVerified = false,
     this.isPopular = false,
   });
