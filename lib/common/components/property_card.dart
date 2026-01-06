@@ -1,4 +1,3 @@
-import 'package:bashakhojo/common/components/feature_item.dart';
 import 'package:bashakhojo/pages/home/home.dart';
 import 'package:flutter/material.dart';
 
@@ -70,43 +69,6 @@ class PropertyCard extends StatelessWidget {
                   ),
                 ),
               ),
-              // Badge (Verified or Popular)
-              if (property.isVerified || property.isPopular)
-                Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          property.isVerified ? Icons.verified : Icons.star,
-                          size: 14,
-                          color: property.isVerified
-                              ? colorScheme.primary
-                              : Colors.orange,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          property.isVerified ? "VERIFIED" : "POPULAR",
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               // Favorite Button
               Positioned(
                 top: 12,
@@ -115,12 +77,12 @@ class PropertyCard extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: colorScheme.surface.withValues(alpha: 0.3),
+                    color: colorScheme.primary.withValues(alpha: 0.3),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.bookmark_add_outlined,
-                    color: Colors.white,
+                    color: Colors.tealAccent,
                     size: 18,
                   ),
                 ),
@@ -220,36 +182,7 @@ class PropertyCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          if (property.beds != null)
-                            FeatureItem(
-                              icon: Icons.bed,
-                              text: property.beds!,
-                              colorScheme: colorScheme,
-                            ),
-                          if (property.feature1 != null)
-                            FeatureItem(
-                              icon: property.featureIcon1 ?? Icons.square_foot,
-                              text: property.feature1!,
-                              colorScheme: colorScheme,
-                            ),
-                          if (property.baths != null)
-                            FeatureItem(
-                              icon: Icons.bathtub,
-                              text: property.baths!,
-                              colorScheme: colorScheme,
-                            ),
-                          if (property.feature2 != null)
-                            FeatureItem(
-                              icon: property.featureIcon2 ?? Icons.wifi,
-                              text: property.feature2!,
-                              colorScheme: colorScheme,
-                            ),
-                        ],
-                      ),
-                    ),
+                    Expanded(child: Row(children: _buildFeatures())),
                     ElevatedButton(
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
@@ -265,7 +198,7 @@ class PropertyCard extends StatelessWidget {
                         visualDensity: VisualDensity.compact,
                       ),
                       child: const Text(
-                        "Rent Now",
+                        "See Details",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
@@ -278,6 +211,73 @@ class PropertyCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  List<Widget> _buildFeatures() {
+    final isApartment =
+        property.category == 'family' || property.category == 'bachelor';
+
+    if (isApartment) {
+      // Show bedroom and bathroom count for apartments
+      return [
+        if (property.bedroomCount != null)
+          _FeatureText(
+            text: '${property.bedroomCount} Bed',
+            colorScheme: colorScheme,
+          ),
+        if (property.bathroomCount != null)
+          _FeatureText(
+            text: '${property.bathroomCount} Bath',
+            colorScheme: colorScheme,
+          ),
+      ];
+    } else {
+      // Show first two amenities for mess
+      final amenities = property.amenities ?? [];
+      return amenities
+          .take(2)
+          .map(
+            (amenity) => _FeatureText(
+              text: _formatAmenity(amenity),
+              colorScheme: colorScheme,
+            ),
+          )
+          .toList();
+    }
+  }
+
+  String _formatAmenity(String amenity) {
+    // Capitalize first letter and replace underscores
+    return amenity
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1);
+        })
+        .join(' ');
+  }
+}
+
+class _FeatureText extends StatelessWidget {
+  final String text;
+  final ColorScheme colorScheme;
+
+  const _FeatureText({required this.text, required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 16),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: colorScheme.onSurfaceVariant,
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }

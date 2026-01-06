@@ -1,4 +1,5 @@
 import 'package:bashakhojo/common/components/property_card.dart';
+import 'package:bashakhojo/services/property_service.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -10,47 +11,46 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedCategoryIndex = 0;
+  List<Map<String, dynamic>> _properties = [];
+  bool _isLoading = true;
 
   static const List<_Category> _categories = [
-    _Category(label: 'Family', icon: Icons.family_restroom),
-    _Category(label: 'Bachelor', icon: Icons.person),
-    _Category(label: 'Mess (Seat)', icon: Icons.chair),
-    _Category(label: 'Mess (Room)', icon: Icons.meeting_room),
+    _Category(label: 'All', icon: Icons.home, value: null),
+    _Category(label: 'Family', icon: Icons.family_restroom, value: 'family'),
+    _Category(label: 'Bachelor', icon: Icons.person, value: 'bachelor'),
+    _Category(label: 'Mess (Seat)', icon: Icons.chair, value: 'mess_seat'),
+    _Category(
+      label: 'Mess (Room)',
+      icon: Icons.meeting_room,
+      value: 'mess_room',
+    ),
   ];
 
-  static const List<PropertyData> _properties = [
-    PropertyData(
-      title: "ফ্ল্যাট ভাড়া হবে",
-      category: "Family Apartment",
-      price: "৳25,000",
-      location: "বাড়ি ১২, রোড ৫, ধানমন্ডি, ঢাকা",
-      beds: "3 Bed",
-      baths: "2 Bath",
-      imageUrl: "https://placehold.co/600x400/e6e6e6/png",
-      isVerified: true,
-    ),
-    PropertyData(
-      title: "একটি সিট ভাড়া হবে",
-      category: "Bachelor Mess (Seat)",
-      price: "৳5,500",
-      location: "সেক্টর ৭, উত্তরা, ঢাকা",
-      feature1: "1 Seat",
-      feature2: "WiFi",
-      featureIcon1: Icons.single_bed,
-      featureIcon2: Icons.wifi,
-      imageUrl: "https://placehold.co/600x400/e6e6e6/png",
-      isPopular: true,
-    ),
-    PropertyData(
-      title: "ছোট রুম ভাড়া হবে",
-      category: "Mess (Room)",
-      price: "৳8,000",
-      location: "মিরপুর ১০, ঢাকা",
-      feature1: "120 Sqft",
-      featureIcon1: Icons.square_foot,
-      imageUrl: "https://placehold.co/600x400/cccccc/png",
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadProperties();
+  }
+
+  Future<void> _loadProperties() async {
+    setState(() => _isLoading = true);
+    try {
+      final category = _categories[_selectedCategoryIndex].value;
+      final properties = category == null
+          ? await PropertyService.getProperties()
+          : await PropertyService.getPropertiesByCategory(category);
+      if (mounted) {
+        setState(() {
+          _properties = properties;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,37 +73,69 @@ class _HomeScreenState extends State<HomeScreen> {
             selectedIndex: _selectedCategoryIndex,
             onSelected: (index) {
               setState(() => _selectedCategoryIndex = index);
+              _loadProperties();
             },
             colorScheme: colorScheme,
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 24)),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          sliver: SliverList.separated(
-            itemCount: _properties.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 20),
-            itemBuilder: (context, index) {
-              return PropertyCard(
-                property: _properties[index],
-                colorScheme: colorScheme,
-                textTheme: textTheme,
-              );
-            },
+        if (_isLoading)
+          const SliverToBoxAdapter(
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (_properties.isEmpty)
+          SliverToBoxAdapter(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(40),
+                child: Text(
+                  'No properties found',
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            sliver: SliverList.separated(
+              itemCount: _properties.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 20),
+              itemBuilder: (context, index) {
+                final property = _properties[index];
+                return PropertyCard(
+                  property: PropertyData(
+                    title: property['title'] ?? '',
+                    category: property['category'] ?? '',
+                    price: '৳${property['price']?.toStringAsFixed(0) ?? '0'}',
+                    location: property['address'] ?? property['city'] ?? '',
+                    imageUrl: (property['images'] as List?)?.isNotEmpty == true
+                        ? property['images'][0]
+                        : 'https://placehold.co/600x400/e6e6e6/png',
+                    bedroomCount: property['bedroom_count'],
+                    bathroomCount: property['bathroom_count'],
+                    amenities: (property['amenities'] as List?)?.cast<String>(),
+                  ),
+                  colorScheme: colorScheme,
+                  textTheme: textTheme,
+                );
+              },
+            ),
           ),
-        ),
         const SliverToBoxAdapter(child: SizedBox(height: 120)),
       ],
     );
   }
 }
 
-
 class _Category {
   final String label;
   final IconData icon;
+  final String? value;
 
-  const _Category({required this.label, required this.icon});
+  const _Category({required this.label, required this.icon, this.value});
 }
 
 class PropertyData {
@@ -112,12 +144,9 @@ class PropertyData {
   final String price;
   final String location;
   final String imageUrl;
-  final String? beds;
-  final String? baths;
-  final String? feature1;
-  final String? feature2;
-  final IconData? featureIcon1;
-  final IconData? featureIcon2;
+  final int? bedroomCount;
+  final int? bathroomCount;
+  final List<String>? amenities;
   final bool isVerified;
   final bool isPopular;
 
@@ -127,17 +156,13 @@ class PropertyData {
     required this.price,
     required this.location,
     required this.imageUrl,
-    this.beds,
-    this.baths,
-    this.feature1,
-    this.feature2,
-    this.featureIcon1,
-    this.featureIcon2,
+    this.bedroomCount,
+    this.bathroomCount,
+    this.amenities,
     this.isVerified = false,
     this.isPopular = false,
   });
 }
-
 
 class _AppBar extends StatelessWidget {
   final ColorScheme colorScheme;
