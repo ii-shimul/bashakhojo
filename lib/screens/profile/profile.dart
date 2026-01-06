@@ -1,4 +1,5 @@
 import 'package:bashakhojo/services/supabase_service.dart';
+import 'package:bashakhojo/services/user_role_notifier.dart';
 import 'package:bashakhojo/services/user_service.dart';
 import 'package:flutter/material.dart';
 
@@ -11,7 +12,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLandlordMode = false;
-  String? userId = SupabaseService.client.auth.currentUser!.id;
+  String? userId = SupabaseService.client.auth.currentUser?.id;
   Map<String, dynamic>? _userProfile;
   bool _isLoading = true;
 
@@ -22,12 +23,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadUserProfile() async {
+    if (userId == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
     final profile = await UserService.getUser(userId!);
     if (mounted) {
       setState(() {
         _userProfile = profile;
+        _isLandlordMode = profile?['role'] == 'landlord';
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _changeRole(bool isLandlord) async {
+    final newRole = isLandlord ? 'landlord' : 'tenant';
+
+    setState(() => _isLandlordMode = isLandlord);
+
+    try {
+      await UserService.updateRole(newRole);
+      UserRoleNotifier().setRole(newRole);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLandlordMode = !isLandlord);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to change role: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
   }
 
@@ -219,12 +247,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                                 Switch.adaptive(
                                   value: _isLandlordMode,
-                                  activeThumbColor: colorScheme.primary,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _isLandlordMode = value;
-                                    });
-                                  },
+                                  activeColor: colorScheme.primary,
+                                  onChanged: _changeRole,
                                 ),
                               ],
                             ),

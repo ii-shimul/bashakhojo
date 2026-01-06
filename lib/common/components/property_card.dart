@@ -1,7 +1,9 @@
 import 'package:bashakhojo/common/widgets/custom_snackbar.dart';
-import 'package:bashakhojo/pages/home/home.dart';
-import 'package:bashakhojo/pages/property_details/property_details.dart';
+import 'package:bashakhojo/screens/home/tenant_home.dart';
+import 'package:bashakhojo/screens/property_details/property_details.dart';
+import 'package:bashakhojo/services/saved_properties_notifier.dart';
 import 'package:bashakhojo/services/user_service.dart';
+import 'package:fluentui_icons/fluentui_icons.dart';
 import 'package:flutter/material.dart';
 
 class PropertyCard extends StatefulWidget {
@@ -48,6 +50,7 @@ class _PropertyCardState extends State<PropertyCard> {
         await UserService.unsaveProperty(widget.property.id!);
         if (mounted) {
           setState(() => _isSaved = false);
+          SavedPropertiesNotifier().notifyChange();
           CustomSnackbar.show(
             context,
             'Property removed from saved',
@@ -58,6 +61,7 @@ class _PropertyCardState extends State<PropertyCard> {
         await UserService.saveProperty(widget.property.id!);
         if (mounted) {
           setState(() => _isSaved = true);
+          SavedPropertiesNotifier().notifyChange();
           CustomSnackbar.show(
             context,
             'Property saved successfully',
@@ -319,47 +323,100 @@ class _PropertyCardState extends State<PropertyCard> {
     final isApartment =
         property.category == 'family' || property.category == 'bachelor';
 
+    List<_FeatureChip> chips = [];
+
     if (isApartment) {
-      return [
-        if (property.bedroomCount != null)
-          _FeatureText(
+      if (property.bedroomCount != null) {
+        chips.add(
+          _FeatureChip(
+            icon: Icons.bed,
             text: '${property.bedroomCount} Bed',
             colorScheme: colorScheme,
           ),
-        if (property.bathroomCount != null)
-          _FeatureText(
+        );
+      }
+      if (property.bathroomCount != null) {
+        chips.add(
+          _FeatureChip(
+            icon: Icons.bathtub_outlined,
             text: '${property.bathroomCount} Bath',
             colorScheme: colorScheme,
           ),
-      ];
+        );
+      }
     } else {
       final amenities = property.amenities ?? [];
-      return amenities
+      chips = amenities
           .take(2)
           .map(
-            (amenity) => _FeatureText(text: amenity, colorScheme: colorScheme),
+            (amenity) => _FeatureChip(
+              icon: _getAmenityIcon(amenity),
+              text: amenity,
+              colorScheme: colorScheme,
+            ),
           )
           .toList();
+    }
+
+    return chips;
+  }
+
+  IconData _getAmenityIcon(String amenity) {
+    switch (amenity.toLowerCase()) {
+      case 'wifi':
+        return Icons.wifi;
+      case 'ac':
+        return Icons.ac_unit;
+      case 'parking':
+        return Icons.local_parking;
+      case 'gym':
+        return Icons.fitness_center;
+      case 'pool':
+        return Icons.pool;
+      default:
+        return Icons.check_circle_outline;
     }
   }
 }
 
-class _FeatureText extends StatelessWidget {
+class _FeatureChip extends StatelessWidget {
+  final IconData icon;
   final String text;
   final ColorScheme colorScheme;
 
-  const _FeatureText({required this.text, required this.colorScheme});
+  const _FeatureChip({
+    required this.icon,
+    required this.text,
+    required this.colorScheme,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: 16),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: colorScheme.onSurfaceVariant,
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
+      padding: const EdgeInsets.only(right: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
+            const SizedBox(width: 4),
+            Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+          ],
         ),
       ),
     );

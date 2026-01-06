@@ -1,6 +1,7 @@
-import 'package:bashakhojo/pages/home/home.dart';
-import 'package:bashakhojo/pages/property_details/property_details.dart';
+import 'package:bashakhojo/screens/home/tenant_home.dart';
+import 'package:bashakhojo/screens/property_details/property_details.dart';
 import 'package:bashakhojo/services/property_service.dart';
+import 'package:bashakhojo/services/saved_properties_notifier.dart';
 import 'package:bashakhojo/services/supabase_service.dart';
 import 'package:bashakhojo/services/user_service.dart';
 import 'package:flutter/material.dart';
@@ -15,10 +16,22 @@ class SavedScreen extends StatefulWidget {
 class _SavedScreenState extends State<SavedScreen> {
   List<Map<String, dynamic>> _savedProperties = [];
   bool _isLoading = true;
+  final _notifier = SavedPropertiesNotifier();
 
   @override
   void initState() {
     super.initState();
+    _notifier.addListener(_onSavedPropertiesChanged);
+    _loadSavedProperties();
+  }
+
+  @override
+  void dispose() {
+    _notifier.removeListener(_onSavedPropertiesChanged);
+    super.dispose();
+  }
+
+  void _onSavedPropertiesChanged() {
     _loadSavedProperties();
   }
 
@@ -31,7 +44,6 @@ class _SavedScreenState extends State<SavedScreen> {
         return;
       }
 
-      // Get user profile with saved properties
       final profile = await UserService.getUser(userId);
       final savedIds = List<String>.from(profile?['saved_properties'] ?? []);
 
@@ -43,7 +55,6 @@ class _SavedScreenState extends State<SavedScreen> {
         return;
       }
 
-      // Fetch all saved properties
       final List<Map<String, dynamic>> properties = [];
       for (final id in savedIds) {
         try {
@@ -52,7 +63,6 @@ class _SavedScreenState extends State<SavedScreen> {
             properties.add(property);
           }
         } catch (e) {
-          // Skip properties that can't be loaded
           continue;
         }
       }

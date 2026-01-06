@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-
-/// A small widget that displays an icon with text, used for property features
-/// like "3 Bed", "2 Bath", "WiFi", etc.
 class FeatureItem extends StatelessWidget {
   final IconData icon;
   final String text;

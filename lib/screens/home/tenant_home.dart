@@ -2,14 +2,14 @@ import 'package:bashakhojo/common/components/property_card.dart';
 import 'package:bashakhojo/services/property_service.dart';
 import 'package:flutter/material.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class TenantHomeScreen extends StatefulWidget {
+  const TenantHomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<TenantHomeScreen> createState() => _TenantHomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _TenantHomeScreenState extends State<TenantHomeScreen> {
   int _selectedCategoryIndex = 0;
   List<Map<String, dynamic>> _properties = [];
   bool _isLoading = true;
@@ -159,6 +159,7 @@ class PropertyData {
   final String? ownerId;
   final bool isVerified;
   final bool isPopular;
+  final bool isAvailable;
 
   const PropertyData({
     this.id,
@@ -175,6 +176,7 @@ class PropertyData {
     this.ownerId,
     this.isVerified = false,
     this.isPopular = false,
+    this.isAvailable = true,
   });
 }
 
@@ -227,23 +229,6 @@ class _AppBar extends StatelessWidget {
                 ],
               ),
             ],
-          ),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: colorScheme.outlineVariant),
-              color: colorScheme.surfaceContainerHighest,
-            ),
-            child: ClipOval(
-              child: Image.network(
-                'https://placehold.co/100x100/png',
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    Icon(Icons.person, color: colorScheme.onSurfaceVariant),
-              ),
-            ),
           ),
         ],
       ),

@@ -1,4 +1,6 @@
-import 'package:bashakhojo/pages/home/home.dart';
+import 'package:bashakhojo/common/widgets/custom_snackbar.dart';
+import 'package:bashakhojo/screens/home/tenant_home.dart';
+import 'package:bashakhojo/services/saved_properties_notifier.dart';
 import 'package:bashakhojo/services/user_service.dart';
 import 'package:flutter/material.dart';
 
@@ -15,6 +17,8 @@ class _PropertyDetailsState extends State<PropertyDetails> {
   int _currentImageIndex = 0;
   Map<String, dynamic>? _ownerProfile;
   bool _isLoadingOwner = true;
+  bool _isSaved = false;
+  bool _isSaveLoading = false;
 
   List<String> get _images => widget.property.images?.isNotEmpty == true
       ? widget.property.images!
@@ -24,6 +28,55 @@ class _PropertyDetailsState extends State<PropertyDetails> {
   void initState() {
     super.initState();
     _loadOwnerProfile();
+    _checkIfSaved();
+  }
+
+  Future<void> _checkIfSaved() async {
+    if (widget.property.id == null) return;
+    final saved = await UserService.isPropertySaved(widget.property.id!);
+    if (mounted) {
+      setState(() => _isSaved = saved);
+    }
+  }
+
+  Future<void> _toggleSave() async {
+    if (widget.property.id == null || _isSaveLoading) return;
+
+    setState(() => _isSaveLoading = true);
+
+    try {
+      if (_isSaved) {
+        await UserService.unsaveProperty(widget.property.id!);
+        if (mounted) {
+          setState(() => _isSaved = false);
+          SavedPropertiesNotifier().notifyChange();
+          CustomSnackbar.show(
+            context,
+            'Property removed from saved',
+            isError: false,
+          );
+        }
+      } else {
+        await UserService.saveProperty(widget.property.id!);
+        if (mounted) {
+          setState(() => _isSaved = true);
+          SavedPropertiesNotifier().notifyChange();
+          CustomSnackbar.show(
+            context,
+            'Property saved successfully',
+            isError: false,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomSnackbar.show(context, 'Failed to save: ${e.toString()}');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaveLoading = false);
+      }
+    }
   }
 
   Future<void> _loadOwnerProfile() async {
@@ -98,7 +151,37 @@ class _PropertyDetailsState extends State<PropertyDetails> {
                       children: [
                         _buildBlurButton(context, Icons.share),
                         const SizedBox(width: 12),
-                        _buildBlurButton(context, Icons.favorite_border),
+                        GestureDetector(
+                          onTap: _toggleSave,
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: _isSaved
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.primary
+                                        .withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: _isSaveLoading
+                                ? Padding(
+                                    padding: const EdgeInsets.all(10),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Icon(
+                                    _isSaved
+                                        ? Icons.bookmark
+                                        : Icons.bookmark_add_outlined,
+                                    color: _isSaved
+                                        ? Colors.white
+                                        : Colors.teal,
+                                    size: 22,
+                                  ),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -234,24 +317,23 @@ class _PropertyDetailsState extends State<PropertyDetails> {
 
                     if (widget.property.category == 'family' ||
                         widget.property.category == 'bachelor')
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            if (widget.property.bedroomCount != null)
-                              _buildSpecChip(
-                                context,
-                                Icons.bed,
-                                "${widget.property.bedroomCount} Beds",
-                              ),
-                            if (widget.property.bathroomCount != null)
-                              _buildSpecChip(
-                                context,
-                                Icons.bathtub,
-                                "${widget.property.bathroomCount} Baths",
-                              ),
-                          ],
-                        ),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          if (widget.property.bedroomCount != null)
+                            _buildSpecChip(
+                              context,
+                              Icons.bed,
+                              "${widget.property.bedroomCount} Bed",
+                            ),
+                          if (widget.property.bathroomCount != null)
+                            _buildSpecChip(
+                              context,
+                              Icons.bathtub_outlined,
+                              "${widget.property.bathroomCount} Bath",
+                            ),
+                        ],
                       ),
 
                     const SizedBox(height: 24),
@@ -294,31 +376,10 @@ class _PropertyDetailsState extends State<PropertyDetails> {
                         spacing: 12,
                         runSpacing: 12,
                         children: widget.property.amenities!.map((item) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colorScheme.surfaceContainerHighest
-                                  .withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(100),
-                              border: Border.all(
-                                color: colorScheme.outlineVariant.withValues(
-                                  alpha: 0.5,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              _formatCategory(item),
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSurface.withValues(
-                                  alpha: 0.8,
-                                ),
-                              ),
-                            ),
+                          return _buildAmenityChip(
+                            context,
+                            _getAmenityIcon(item),
+                            _formatCategory(item),
                           );
                         }).toList(),
                       ),
@@ -556,29 +617,75 @@ class _PropertyDetailsState extends State<PropertyDetails> {
   Widget _buildSpecChip(BuildContext context, IconData icon, String label) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(100),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 20, color: colorScheme.primary),
+          Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
           const SizedBox(width: 8),
           Text(
             label,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface,
+              color: colorScheme.onSurface.withValues(alpha: 0.8),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildAmenityChip(BuildContext context, IconData icon, String label) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface.withValues(alpha: 0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getAmenityIcon(String amenity) {
+    switch (amenity.toLowerCase()) {
+      case 'wifi':
+        return Icons.wifi;
+      case 'ac':
+        return Icons.ac_unit;
+      case 'parking':
+        return Icons.local_parking;
+      case 'gym':
+        return Icons.fitness_center;
+      case 'pool':
+        return Icons.pool;
+      default:
+        return Icons.check_circle_outline;
+    }
   }
 }

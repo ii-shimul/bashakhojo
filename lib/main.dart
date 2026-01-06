@@ -1,5 +1,5 @@
 import 'package:bashakhojo/core/main_shell.dart';
-import 'package:bashakhojo/pages/auth/auth.dart';
+import 'package:bashakhojo/screens/auth/auth.dart';
 import 'package:bashakhojo/services/supabase_service.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -46,7 +46,7 @@ class AuthGate extends StatelessWidget {
           return const MainShell();
         }
 
-        return const Auth();
+        return const AuthScreen();
       },
     );
   }

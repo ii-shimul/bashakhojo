@@ -1,17 +1,17 @@
-import 'package:bashakhojo/pages/auth/signup.dart';
+import 'package:bashakhojo/screens/auth/login.dart';
 import 'package:bashakhojo/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import '../../common/widgets/custom_text_field.dart';
-import '../../common/widgets/custom_snackbar.dart';
 
-class Login extends StatefulWidget {
-  const Login({super.key});
+class SignupScreen extends StatefulWidget {
+  const SignupScreen({super.key});
 
   @override
-  State<Login> createState() => _LoginState();
+  State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _LoginState extends State<Login> {
+class _SignupScreenState extends State<SignupScreen> {
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
@@ -20,44 +20,67 @@ class _LoginState extends State<Login> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _login() async {
+  void _signUp() async {
+    final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
-      CustomSnackbar.show(context, 'Please fill in all fields');
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      _showSnackBar('Please fill in all fields');
+      return;
+    }
+
+    if (password.length < 8) {
+      _showSnackBar('Password must be at least 8 characters');
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final response = await _authService.signInWithEmailPass(email, password);
+      final response = await _authService.signUpWithEmailPass(
+        email,
+        password,
+        name,
+      );
 
       if (!mounted) return;
 
       if (response.user != null) {
-        CustomSnackbar.show(context, 'Login successful!', isError: false);
+        _showSnackBar('Account created successfully!', isError: false);
         // Pop back to AuthGate which will show Home
         if (mounted) {
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
       } else {
-        CustomSnackbar.show(context, 'Login failed. Please try again.');
+        _showSnackBar('Sign up failed. Please try again.');
       }
     } catch (e) {
       if (!mounted) return;
-      CustomSnackbar.show(context, e.toString());
+      _showSnackBar(e.toString());
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _showSnackBar(String message, {bool isError = true}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red.shade600 : Colors.green.shade600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   @override
@@ -87,6 +110,7 @@ class _LoginState extends State<Login> {
                       ),
                     ),
                   ),
+
                   Row(
                     children: [
                       Container(
@@ -108,10 +132,12 @@ class _LoginState extends State<Login> {
                       ),
                     ],
                   ),
+
                   const SizedBox(width: 40),
                 ],
               ),
             ),
+
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -119,10 +145,12 @@ class _LoginState extends State<Login> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 8),
+
                     Container(
                       height: 240,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(32),
+
                         color: colors.primary.withValues(alpha: 0.1),
                         image: const DecorationImage(
                           image: AssetImage(
@@ -147,13 +175,15 @@ class _LoginState extends State<Login> {
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 24),
+
                     Text.rich(
                       TextSpan(
                         children: [
-                          const TextSpan(text: "Welcome "),
+                          const TextSpan(text: "Join "),
                           TextSpan(
-                            text: "Back",
+                            text: "BashaKhojo",
                             style: TextStyle(color: colors.primary),
                           ),
                         ],
@@ -166,13 +196,22 @@ class _LoginState extends State<Login> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "Sign in to continue your home search.",
+                      "Find your perfect home in Bangladesh.",
                       textAlign: TextAlign.center,
                       style: textTheme.bodyMedium?.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
                     ),
+
                     const SizedBox(height: 32),
+
+                    CustomTextField(
+                      label: "Full Name",
+                      hint: "Enter your full name",
+                      icon: Icons.person_outline,
+                      controller: _nameController,
+                    ),
+                    const SizedBox(height: 20),
                     CustomTextField(
                       label: "Email Address",
                       hint: "hello@example.com",
@@ -183,7 +222,7 @@ class _LoginState extends State<Login> {
                     const SizedBox(height: 20),
                     CustomTextField(
                       label: "Password",
-                      hint: "Enter your password",
+                      hint: "At least 8 characters",
                       icon: Icons.lock_outline,
                       isPassword: true,
                       isObscure: !_isPasswordVisible,
@@ -194,27 +233,13 @@ class _LoginState extends State<Login> {
                         });
                       },
                     ),
-                    const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          // TODO: Implement forgot password
-                        },
-                        child: Text(
-                          "Forgot Password?",
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+
+                    const SizedBox(height: 24),
+
                     SizedBox(
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _login,
+                        onPressed: _isLoading ? null : _signUp,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: colors.primary,
                           foregroundColor: colors.onPrimary,
@@ -235,7 +260,7 @@ class _LoginState extends State<Login> {
                                 ),
                               )
                             : const Text(
-                                "Log In",
+                                "Sign Up",
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -243,12 +268,14 @@ class _LoginState extends State<Login> {
                               ),
                       ),
                     ),
+
                     const SizedBox(height: 32),
+
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          "Don't have an account? ",
+                          "Already have an account? ",
                           style: textTheme.bodyMedium?.copyWith(
                             color: colors.onSurfaceVariant,
                             fontWeight: FontWeight.w500,
@@ -259,12 +286,12 @@ class _LoginState extends State<Login> {
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const Signup(),
+                                builder: (context) => const LoginScreen(),
                               ),
                             );
                           },
                           child: Text(
-                            "Sign Up",
+                            "Log In",
                             style: textTheme.bodyMedium?.copyWith(
                               color: colors.primary,
                               fontWeight: FontWeight.bold,

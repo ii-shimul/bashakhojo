@@ -87,6 +87,23 @@ class PropertyService {
   }
 
   static Future<void> deleteProperty(String propertyId) async {
+    final property = await getProperty(propertyId);
+
+    if (property != null && property['images'] != null) {
+      final images = List<String>.from(property['images']);
+      for (final imageUrl in images) {
+        try {
+          final uri = Uri.parse(imageUrl);
+          final pathSegments = uri.pathSegments;
+          final bucketIndex = pathSegments.indexOf('property-images');
+          if (bucketIndex != -1 && bucketIndex < pathSegments.length - 1) {
+            final filePath = pathSegments.sublist(bucketIndex + 1).join('/');
+            await _client.storage.from('property-images').remove([filePath]);
+          }
+        } catch (_) {}
+      }
+    }
+
     await _client.from('properties').delete().eq('id', propertyId);
   }
 }
