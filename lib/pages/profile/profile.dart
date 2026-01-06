@@ -1,10 +1,9 @@
 import 'package:bashakhojo/services/supabase_service.dart';
+import 'package:bashakhojo/services/user_service.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileScreen extends StatefulWidget {
-  ProfileScreen({super.key});
-  User? currentUser = SupabaseService.client.auth.currentUser;
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -12,6 +11,25 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLandlordMode = false;
+  String? userId = SupabaseService.client.auth.currentUser!.id;
+  Map<String, dynamic>? _userProfile;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final profile = await UserService.getUser(userId!);
+    if (mounted) {
+      setState(() {
+        _userProfile = profile;
+        _isLoading = false;
+      });
+    }
+  }
 
   Future<void> _logOut() async {
     try {
@@ -91,13 +109,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 color: colorScheme.surface,
                                 width: 4,
                               ),
-                              image: const DecorationImage(
-                                image: NetworkImage(
-                                  'https://placehold.co/200x200/png',
-                                ),
-                                fit: BoxFit.cover,
-                              ),
+                              image: _userProfile?['avatar_url'] != null
+                                  ? DecorationImage(
+                                      image: NetworkImage(
+                                        _userProfile!['avatar_url'],
+                                      ),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
                             ),
+                            child: _userProfile?['avatar_url'] == null
+                                ? Icon(
+                                    Icons.person,
+                                    size: 64,
+                                    color: colorScheme.onSurfaceVariant,
+                                  )
+                                : null,
                           ),
                         ),
                         Positioned(
@@ -125,7 +152,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      widget.currentUser?.userMetadata?['fullName'] ?? 'User',
+                      _userProfile?['full_name'] ?? 'User',
                       style: textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: colorScheme.onSurface,
@@ -133,7 +160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      widget.currentUser?.email ?? '',
+                      SupabaseService.client.auth.currentUser?.email ?? '',
                       style: textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,

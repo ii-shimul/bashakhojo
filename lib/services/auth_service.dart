@@ -10,7 +10,7 @@ class AuthService {
     return await SupabaseService.client.auth.signUp(
       email: email,
       password: password,
-      data: {'fullName': fullName},
+      data: {'full_name': fullName},
     );
   }
 
