@@ -5,8 +5,6 @@ import 'package:bashakhojo/pages/profile/profile.dart';
 import 'package:bashakhojo/pages/saved/saved.dart';
 import 'package:flutter/material.dart';
 
-/// Main shell widget that handles bottom navigation between screens.
-/// This is the authenticated user's main interface.
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 

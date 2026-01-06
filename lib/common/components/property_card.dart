@@ -76,6 +76,17 @@ class _PropertyCardState extends State<PropertyCard> {
     }
   }
 
+  String _formatCategory(String category) {
+    return category
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1);
+        })
+        .join(' ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = widget.colorScheme;
@@ -188,7 +199,7 @@ class _PropertyCardState extends State<PropertyCard> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            property.category,
+                            _formatCategory(property.category),
                             style: TextStyle(
                               color: colorScheme.primary,
                               fontSize: 12,
