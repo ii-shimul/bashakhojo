@@ -14,7 +14,10 @@ class TenantHomeScreen extends StatefulWidget {
 class _TenantHomeScreenState extends State<TenantHomeScreen> {
   int _selectedCategoryIndex = 0;
   List<Map<String, dynamic>> _properties = [];
+  List<Map<String, dynamic>> _filteredProperties = [];
   bool _isLoading = true;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   List<Category> get _categories {
     return [
@@ -52,6 +55,48 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> {
     _loadProperties();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterProperties() {
+    if (_searchQuery.isEmpty) {
+      _filteredProperties = List.from(_properties);
+    } else {
+      _filteredProperties = [];
+      String queryLower = _searchQuery.toLowerCase();
+
+      for (int i = 0; i < _properties.length; i++) {
+        Map<String, dynamic> property = _properties[i];
+
+        String address = property['address'] ?? '';
+        String city = property['city'] ?? '';
+        String location = '$address $city'.toLowerCase();
+
+        if (location.contains(queryLower)) {
+          _filteredProperties.add(property);
+        }
+      }
+    }
+  }
+
+  void _onSearchChanged(String query) {
+    setState(() {
+      _searchQuery = query;
+      _filterProperties();
+    });
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _filterProperties();
+    });
+  }
+
   Future<void> _loadProperties() async {
     setState(() {
       _isLoading = true;
@@ -70,6 +115,7 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> {
       if (mounted) {
         setState(() {
           _properties = properties;
+          _filterProperties();
           _isLoading = false;
         });
       }
@@ -117,6 +163,10 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> {
           child: SearchBarSection(
             colorScheme: colorScheme,
             horizontalPadding: horizontalPadding,
+            controller: _searchController,
+            onChanged: _onSearchChanged,
+            onClear: _clearSearch,
+            searchQuery: _searchQuery,
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -147,7 +197,7 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> {
       );
     }
 
-    if (_properties.isEmpty) {
+    if (_filteredProperties.isEmpty) {
       return SliverToBoxAdapter(
         child: Center(
           child: Padding(
@@ -178,7 +228,7 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> {
     return SliverPadding(
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       sliver: SliverList.separated(
-        itemCount: _properties.length,
+        itemCount: _filteredProperties.length,
         separatorBuilder: (BuildContext context, int index) {
           return const SizedBox(height: 20);
         },
@@ -203,12 +253,9 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> {
           crossAxisSpacing: 20,
           childAspectRatio: 0.75,
         ),
-        delegate: SliverChildBuilderDelegate(
-          (BuildContext context, int index) {
-            return _buildPropertyCard(index, colorScheme, textTheme);
-          },
-          childCount: _properties.length,
-        ),
+        delegate: SliverChildBuilderDelegate((BuildContext context, int index) {
+          return _buildPropertyCard(index, colorScheme, textTheme);
+        }, childCount: _filteredProperties.length),
       ),
     );
   }
@@ -218,7 +265,7 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> {
     ColorScheme colorScheme,
     TextTheme textTheme,
   ) {
-    Map<String, dynamic> property = _properties[index];
+    Map<String, dynamic> property = _filteredProperties[index];
 
     List<String> images = [];
     if (property['images'] != null) {
@@ -337,11 +384,7 @@ class AppBarSection extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
-            children: [
-              _buildLogo(),
-              const SizedBox(width: 12),
-              _buildTitle(),
-            ],
+            children: [_buildLogo(), const SizedBox(width: 12), _buildTitle()],
           ),
         ],
       ),
@@ -386,11 +429,19 @@ class AppBarSection extends StatelessWidget {
 class SearchBarSection extends StatelessWidget {
   final ColorScheme colorScheme;
   final double horizontalPadding;
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+  final String searchQuery;
 
   const SearchBarSection({
     super.key,
     required this.colorScheme,
     required this.horizontalPadding,
+    required this.controller,
+    required this.onChanged,
+    required this.onClear,
+    required this.searchQuery,
   });
 
   @override
@@ -428,12 +479,17 @@ class SearchBarSection extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(left: 20, right: 12),
-                  child: Icon(Icons.search, color: colorScheme.onSurfaceVariant),
+                  child: Icon(
+                    Icons.search,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 Expanded(
                   child: TextField(
+                    controller: controller,
+                    onChanged: onChanged,
                     decoration: InputDecoration(
-                      hintText: "Search Location...",
+                      hintText: "Search by location...",
                       hintStyle: TextStyle(
                         color: colorScheme.onSurfaceVariant,
                         fontFamily: 'Noto Sans Bengali',
@@ -442,20 +498,38 @@ class SearchBarSection extends StatelessWidget {
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: CircleAvatar(
-                    backgroundColor: colorScheme.surface,
-                    foregroundColor: colorScheme.onSurfaceVariant,
-                    child: const Icon(Icons.tune, size: 20),
-                  ),
-                ),
+                _buildTrailingButton(),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildTrailingButton() {
+    if (searchQuery.isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 8.0),
+        child: GestureDetector(
+          onTap: onClear,
+          child: CircleAvatar(
+            backgroundColor: colorScheme.surface,
+            foregroundColor: colorScheme.onSurfaceVariant,
+            child: const Icon(Icons.close, size: 20),
+          ),
+        ),
+      );
+    } else {
+      return Padding(
+        padding: const EdgeInsets.only(right: 8.0),
+        child: CircleAvatar(
+          backgroundColor: colorScheme.surface,
+          foregroundColor: colorScheme.onSurfaceVariant,
+          child: const Icon(Icons.tune, size: 20),
+        ),
+      );
+    }
   }
 }
 
