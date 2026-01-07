@@ -121,7 +121,7 @@ class AuthScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 0,
         shape: const StadiumBorder(),
-        padding: EdgeInsets.symmetric(vertical: 20, horizontal: 30),
+        padding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
       ),
       child: Text("Sign Up", style: TextStyle(fontSize: 18)),
     );
@@ -143,7 +143,7 @@ class AuthScreen extends StatelessWidget {
         foregroundColor: colors.primary,
         backgroundColor: colors.primary.withValues(alpha: 0.05),
         shape: const StadiumBorder(),
-        padding: EdgeInsets.symmetric(vertical: 20, horizontal: 30),
+        padding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
       ),
       child: Text("Login", style: TextStyle(fontSize: 18)),
     );

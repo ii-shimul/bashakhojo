@@ -288,13 +288,22 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: _buildAppBar(colorScheme, textTheme),
-      body: Form(
-        key: _formKey,
-        child: _isMobile
-            ? _buildMobileLayout(colorScheme, textTheme)
-            : _buildDesktopLayout(colorScheme, textTheme),
+      body: Stack(
+        children: [
+          Form(
+            key: _formKey,
+            child: _isMobile
+                ? _buildMobileLayout(colorScheme, textTheme)
+                : _buildDesktopLayout(colorScheme, textTheme),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _buildBottomSheet(colorScheme),
+          ),
+        ],
       ),
-      bottomSheet: _buildBottomSheet(colorScheme),
     );
   }
 
@@ -331,8 +340,14 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   }
 
   Widget _buildMobileLayout(ColorScheme colorScheme, TextTheme textTheme) {
+    double bottomPadding = MediaQuery.of(context).padding.bottom;
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 120),
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: 100 + bottomPadding,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -356,8 +371,14 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   }
 
   Widget _buildDesktopLayout(ColorScheme colorScheme, TextTheme textTheme) {
+    double bottomPadding = MediaQuery.of(context).padding.bottom;
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(left: 40, right: 40, top: 24, bottom: 120),
+      padding: EdgeInsets.only(
+        left: 40,
+        right: 40,
+        top: 24,
+        bottom: 100 + bottomPadding,
+      ),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 900),
@@ -625,15 +646,88 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildLabel(colorScheme, "Property Type"),
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(children: _buildTypePills(colorScheme)),
-        ),
+        if (_isMobile)
+          _buildMobileTypePills(colorScheme)
+        else
+          _buildDesktopTypePills(colorScheme),
       ],
+    );
+  }
+
+  Widget _buildMobileTypePills(ColorScheme colorScheme) {
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _categoryLabels.length,
+        separatorBuilder: (BuildContext context, int index) {
+          return const SizedBox(width: 10);
+        },
+        itemBuilder: (BuildContext context, int index) {
+          return _buildMobileTypePill(
+            colorScheme,
+            _categoryLabels[index],
+            index,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMobileTypePill(ColorScheme colorScheme, String text, int index) {
+    bool isSelected = _selectedTypeIndex == index;
+
+    Color backgroundColor;
+    if (isSelected) {
+      backgroundColor = colorScheme.primary;
+    } else {
+      backgroundColor = colorScheme.surfaceContainerHighest.withValues(
+        alpha: 0.3,
+      );
+    }
+
+    Color textColor;
+    if (isSelected) {
+      textColor = colorScheme.onPrimary;
+    } else {
+      textColor = colorScheme.onSurfaceVariant;
+    }
+
+    return GestureDetector(
+      onTap: () {
+        _selectType(index);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(100),
+          border: isSelected
+              ? null
+              : Border.all(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopTypePills(ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(children: _buildTypePills(colorScheme)),
     );
   }
 
@@ -1097,9 +1191,9 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
         ),
       );
     } else {
-      buttonChild = Row(
+      buttonChild = const Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
+        children: [
           Text(
             "List Property",
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
