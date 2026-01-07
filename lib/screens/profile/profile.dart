@@ -7,7 +7,9 @@ class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<ProfileScreen> createState() {
+    return _ProfileScreenState();
+  }
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
@@ -24,11 +26,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadUserProfile() async {
     if (userId == null) {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+      });
       return;
     }
 
-    final profile = await UserService.getUser(userId!);
+    Map<String, dynamic>? profile = await UserService.getUser(userId!);
+
     if (mounted) {
       setState(() {
         _userProfile = profile;
@@ -39,16 +44,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _changeRole(bool isLandlord) async {
-    final newRole = isLandlord ? 'landlord' : 'tenant';
+    String newRole;
+    if (isLandlord) {
+      newRole = 'landlord';
+    } else {
+      newRole = 'tenant';
+    }
 
-    setState(() => _isLandlordMode = isLandlord);
+    setState(() {
+      _isLandlordMode = isLandlord;
+    });
 
     try {
       await UserService.updateRole(newRole);
       UserRoleNotifier().setRole(newRole);
     } catch (e) {
       if (mounted) {
-        setState(() => _isLandlordMode = !isLandlord);
+        setState(() {
+          _isLandlordMode = !isLandlord;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to change role: ${e.toString()}'),
@@ -76,266 +90,250 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    ColorScheme colorScheme = Theme.of(context).colorScheme;
+    TextTheme textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Profile",
-                    style: textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  _buildHeaderButton(
-                    context,
-                    Icons.settings_outlined,
-                    onTap: () {},
-                  ),
-                ],
-              ),
-            ),
-
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 16),
-
-                          Stack(
-                            children: [
-                              Container(
-                                width: 128,
-                                height: 128,
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.surfaceContainerHighest
-                                      .withValues(alpha: 0.3),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.05,
-                                      ),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: colorScheme.surface,
-                                      width: 4,
-                                    ),
-                                    image: _userProfile?['avatar_url'] != null
-                                        ? DecorationImage(
-                                            image: NetworkImage(
-                                              _userProfile!['avatar_url'],
-                                            ),
-                                            fit: BoxFit.cover,
-                                          )
-                                        : null,
-                                  ),
-                                  child: _userProfile?['avatar_url'] == null
-                                      ? Icon(
-                                          Icons.person,
-                                          size: 64,
-                                          color: colorScheme.onSurfaceVariant,
-                                        )
-                                      : null,
-                                ),
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: Material(
-                                  color: colorScheme.primary,
-                                  shape: const CircleBorder(),
-                                  elevation: 4,
-                                  child: InkWell(
-                                    onTap: () {},
-                                    customBorder: const CircleBorder(),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Icon(
-                                        Icons.edit,
-                                        size: 18,
-                                        color: colorScheme.onPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _userProfile?['full_name'] ?? 'User',
-                            style: textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            SupabaseService.client.auth.currentUser?.email ??
-                                '',
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-
-                          const SizedBox(height: 32),
-
-                          Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: colorScheme.surfaceContainerHighest
-                                  .withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: colorScheme.outlineVariant.withValues(
-                                  alpha: 0.3,
-                                ),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.02),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        "Landlord Mode",
-                                        style: textTheme.titleMedium?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        "Switch to manage properties",
-                                        style: textTheme.bodySmall?.copyWith(
-                                          color: colorScheme.primary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Switch.adaptive(
-                                  value: _isLandlordMode,
-                                  activeColor: colorScheme.primary,
-                                  onChanged: _changeRole,
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          Column(
-                            children: [
-                              _buildMenuItem(
-                                context,
-                                Icons.calendar_month,
-                                "My Bookings",
-                              ),
-                              const SizedBox(height: 12),
-                              _buildMenuItem(
-                                context,
-                                Icons.favorite_border,
-                                "Saved Homes",
-                              ),
-                              const SizedBox(height: 12),
-                              _buildMenuItem(
-                                context,
-                                Icons.credit_card,
-                                "Payments",
-                              ),
-                              const SizedBox(height: 12),
-                              _buildMenuItem(
-                                context,
-                                Icons.help_outline,
-                                "Help & Support",
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 32),
-
-                          SizedBox(
-                            width: double.infinity,
-                            child: TextButton.icon(
-                              onPressed: () {
-                                _logOut();
-                              },
-                              style: TextButton.styleFrom(
-                                foregroundColor: colorScheme.error,
-                                backgroundColor: colorScheme.error.withValues(
-                                  alpha: 0.1,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 20,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(100),
-                                  side: BorderSide(
-                                    color: colorScheme.error.withValues(
-                                      alpha: 0.2,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              icon: const Icon(Icons.logout),
-                              label: const Text(
-                                "Log Out",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-                          Text(
-                            "Version 2.4.0",
-                            style: textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant.withValues(
-                                alpha: 0.6,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 100),
-                        ],
-                      ),
-                    ),
-            ),
+            _buildHeader(colorScheme, textTheme),
+            _buildBody(colorScheme, textTheme),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(ColorScheme colorScheme, TextTheme textTheme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            "Profile",
+            style: textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          _buildHeaderButton(context, Icons.settings_outlined, onTap: () {}),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody(ColorScheme colorScheme, TextTheme textTheme) {
+    if (_isLoading) {
+      return const Expanded(child: Center(child: CircularProgressIndicator()));
+    }
+
+    return Expanded(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            _buildAvatar(colorScheme),
+            const SizedBox(height: 16),
+            _buildUserInfo(colorScheme, textTheme),
+            const SizedBox(height: 32),
+            _buildLandlordModeCard(colorScheme, textTheme),
+            const SizedBox(height: 24),
+            _buildMenuItems(colorScheme, textTheme),
+            const SizedBox(height: 32),
+            _buildLogoutButton(colorScheme),
+            const SizedBox(height: 16),
+            _buildVersionText(colorScheme, textTheme),
+            const SizedBox(height: 100),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatar(ColorScheme colorScheme) {
+    String? avatarUrl = _userProfile?['avatar_url'];
+
+    return Stack(
+      children: [
+        Container(
+          width: 128,
+          height: 128,
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: colorScheme.surface, width: 4),
+              image: avatarUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(avatarUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+            ),
+            child: avatarUrl == null
+                ? Icon(
+                    Icons.person,
+                    size: 64,
+                    color: colorScheme.onSurfaceVariant,
+                  )
+                : null,
+          ),
+        ),
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: Material(
+            color: colorScheme.primary,
+            shape: const CircleBorder(),
+            elevation: 4,
+            child: InkWell(
+              onTap: () {},
+              customBorder: const CircleBorder(),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Icon(Icons.edit, size: 18, color: colorScheme.onPrimary),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUserInfo(ColorScheme colorScheme, TextTheme textTheme) {
+    String fullName = _userProfile?['full_name'] ?? 'User';
+    String email = SupabaseService.client.auth.currentUser?.email ?? '';
+
+    return Column(
+      children: [
+        Text(
+          fullName,
+          style: textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          email,
+          style: textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLandlordModeCard(ColorScheme colorScheme, TextTheme textTheme) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Landlord Mode",
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Switch to manage properties",
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch.adaptive(
+            value: _isLandlordMode,
+            activeColor: colorScheme.primary,
+            onChanged: _changeRole,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuItems(ColorScheme colorScheme, TextTheme textTheme) {
+    return Column(
+      children: [
+        _buildMenuItem(context, Icons.calendar_month, "My Bookings"),
+        const SizedBox(height: 12),
+        _buildMenuItem(context, Icons.favorite_border, "Saved Homes"),
+        const SizedBox(height: 12),
+        _buildMenuItem(context, Icons.credit_card, "Payments"),
+        const SizedBox(height: 12),
+        _buildMenuItem(context, Icons.help_outline, "Help & Support"),
+      ],
+    );
+  }
+
+  Widget _buildLogoutButton(ColorScheme colorScheme) {
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton.icon(
+        onPressed: () {
+          _logOut();
+        },
+        style: TextButton.styleFrom(
+          foregroundColor: colorScheme.error,
+          backgroundColor: colorScheme.error.withValues(alpha: 0.1),
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(100),
+            side: BorderSide(color: colorScheme.error.withValues(alpha: 0.2)),
+          ),
+        ),
+        icon: const Icon(Icons.logout),
+        label: const Text(
+          "Log Out",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVersionText(ColorScheme colorScheme, TextTheme textTheme) {
+    return Text(
+      "Version 2.4.0",
+      style: textTheme.labelSmall?.copyWith(
+        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
       ),
     );
   }
@@ -345,7 +343,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     IconData icon, {
     VoidCallback? onTap,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(100),
@@ -353,9 +352,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         width: 40,
         height: 40,
         alignment: Alignment.center,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.transparent, // Or a very light hover color
+          color: Colors.transparent,
         ),
         child: Icon(icon, color: colorScheme.onSurface),
       ),
@@ -363,8 +362,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildMenuItem(BuildContext context, IconData icon, String title) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    ColorScheme colorScheme = Theme.of(context).colorScheme;
+    TextTheme textTheme = Theme.of(context).textTheme;
 
     return InkWell(
       onTap: () {},
@@ -374,13 +373,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.transparent,
-          ), // Placeholder for potential hover border
+          border: Border.all(color: Colors.transparent),
         ),
         child: Row(
           children: [
-            // Icon Container
             Container(
               width: 48,
               height: 48,
@@ -391,8 +387,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Icon(icon, color: colorScheme.primary, size: 24),
             ),
             const SizedBox(width: 16),
-
-            // Text
             Expanded(
               child: Text(
                 title,
@@ -402,8 +396,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
-
-            // Chevron
             Icon(
               Icons.chevron_right,
               color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),

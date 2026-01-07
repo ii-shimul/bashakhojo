@@ -1,12 +1,13 @@
 import 'package:flutter/foundation.dart';
 
 class SavedPropertiesNotifier extends ChangeNotifier {
-  static final SavedPropertiesNotifier _instance =
-      SavedPropertiesNotifier._internal();
+  static final SavedPropertiesNotifier _instance = SavedPropertiesNotifier._();
 
-  factory SavedPropertiesNotifier() => _instance;
+  SavedPropertiesNotifier._();
 
-  SavedPropertiesNotifier._internal();
+  factory SavedPropertiesNotifier() {
+    return _instance;
+  }
 
   void notifyChange() {
     notifyListeners();

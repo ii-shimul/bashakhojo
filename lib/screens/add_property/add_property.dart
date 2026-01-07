@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:bashakhojo/common/widgets/custom_snackbar.dart';
 import 'package:bashakhojo/services/property_service.dart';
@@ -11,15 +12,17 @@ class AddPropertyScreen extends StatefulWidget {
   const AddPropertyScreen({super.key});
 
   @override
-  State<AddPropertyScreen> createState() => _AddPropertyScreenState();
+  State<AddPropertyScreen> createState() {
+    return _AddPropertyScreenState();
+  }
 }
 
 class _AddPropertyScreenState extends State<AddPropertyScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _priceController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _descriptionController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
   int _selectedTypeIndex = 0;
   int _bedroomCount = 2;
@@ -28,30 +31,36 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   final List<XFile> _selectedImages = [];
   bool _isSubmitting = false;
 
-  final List<String> _categories = [
-    'family',
-    'bachelor',
-    'mess_seat',
-    'mess_room',
-  ];
-  final List<String> _categoryLabels = [
-    'Family',
-    'Bachelor',
-    'Mess (Seat)',
-    'Mess (Room)',
-  ];
+  List<String> get _categories {
+    return ['family', 'bachelor', 'mess_seat', 'mess_room'];
+  }
 
-  final List<String> _amenitiesList = [
-    'Gas Supply',
-    'CCTV',
-    'Lift',
-    'Generator',
-    'WiFi',
-    'Parking',
-    'Rooftop Access',
-    'Security Guard',
-    'Fridge',
-  ];
+  List<String> get _categoryLabels {
+    return ['Family', 'Bachelor', 'Mess (Seat)', 'Mess (Room)'];
+  }
+
+  List<String> get _amenitiesList {
+    return [
+      'Gas Supply',
+      'CCTV',
+      'Lift',
+      'Generator',
+      'WiFi',
+      'Parking',
+      'Rooftop Access',
+      'Security Guard',
+      'Fridge',
+    ];
+  }
+
+  bool get _isApartmentType {
+    return _selectedTypeIndex == 0 || _selectedTypeIndex == 1;
+  }
+
+  bool get _isMobile {
+    double width = MediaQuery.of(context).size.width;
+    return width < 600;
+  }
 
   @override
   void dispose() {
@@ -63,14 +72,19 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   }
 
   Future<void> _pickImages() async {
-    final ImagePicker picker = ImagePicker();
-    final images = await picker.pickMultiImage();
+    ImagePicker picker = ImagePicker();
+    List<XFile> images = await picker.pickMultiImage();
 
     if (images.isNotEmpty) {
       setState(() {
-        // Limit to 10 images
-        final remaining = 10 - _selectedImages.length;
-        _selectedImages.addAll(images.take(remaining));
+        int remaining = 10 - _selectedImages.length;
+        List<XFile> imagesToAdd = [];
+
+        for (int i = 0; i < images.length && i < remaining; i++) {
+          imagesToAdd.add(images[i]);
+        }
+
+        _selectedImages.addAll(imagesToAdd);
       });
     }
   }
@@ -82,19 +96,33 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   }
 
   Future<List<String>> _uploadImages() async {
-    final List<String> urls = [];
-    final userId = SupabaseService.client.auth.currentUser?.id;
-    if (userId == null) return urls;
+    List<String> urls = [];
 
-    for (final image in _selectedImages) {
-      final bytes = await File(image.path).readAsBytes();
-      final ext = image.path.split('.').last.toLowerCase();
-      final contentType = ext == 'png'
-          ? 'image/png'
-          : ext == 'gif'
-          ? 'image/gif'
-          : 'image/jpeg';
-      final fileName = '$userId/${DateTime.now().millisecondsSinceEpoch}.$ext';
+    String? userId = SupabaseService.client.auth.currentUser?.id;
+    if (userId == null) {
+      return urls;
+    }
+
+    for (int i = 0; i < _selectedImages.length; i++) {
+      XFile image = _selectedImages[i];
+
+      Uint8List bytes = await File(image.path).readAsBytes();
+
+      String path = image.path;
+      List<String> parts = path.split('.');
+      String ext = parts.last.toLowerCase();
+
+      String contentType;
+      if (ext == 'png') {
+        contentType = 'image/png';
+      } else if (ext == 'gif') {
+        contentType = 'image/gif';
+      } else {
+        contentType = 'image/jpeg';
+      }
+
+      int timestamp = DateTime.now().millisecondsSinceEpoch;
+      String fileName = '$userId/$timestamp.$ext';
 
       await SupabaseService.client.storage
           .from('property-images')
@@ -104,7 +132,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
             fileOptions: FileOptions(contentType: contentType),
           );
 
-      final url = SupabaseService.client.storage
+      String url = SupabaseService.client.storage
           .from('property-images')
           .getPublicUrl(fileName);
 
@@ -115,37 +143,66 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   }
 
   Future<void> _submitProperty() async {
-    if (!_formKey.currentState!.validate()) return;
+    bool isValid = _formKey.currentState!.validate();
+    if (!isValid) {
+      return;
+    }
 
     if (_selectedImages.isEmpty) {
       CustomSnackbar.show(context, 'Please add at least one photo');
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+    });
 
     try {
-      // Upload images first
-      final imageUrls = await _uploadImages();
+      List<String> imageUrls = await _uploadImages();
 
-      // Create property
+      String title = _titleController.text.trim();
+      String priceText = _priceController.text.trim().replaceAll(',', '');
+      num price = num.parse(priceText);
+      String category = _categories[_selectedTypeIndex];
+
+      String? description;
+      if (_descriptionController.text.trim().isNotEmpty) {
+        description = _descriptionController.text.trim();
+      }
+
+      String? address;
+      if (_addressController.text.trim().isNotEmpty) {
+        address = _addressController.text.trim();
+      }
+
+      int? bedroomCountValue;
+      int? bathroomCountValue;
+      if (_isApartmentType) {
+        bedroomCountValue = _bedroomCount;
+        bathroomCountValue = _bathroomCount;
+      }
+
+      List<String>? amenities;
+      if (_selectedAmenities.isNotEmpty) {
+        amenities = _selectedAmenities.toList();
+      }
+
+      List<String>? images;
+      if (imageUrls.isNotEmpty) {
+        images = imageUrls;
+      }
+
       await PropertyService.createProperty(
-        title: _titleController.text.trim(),
-        price: num.parse(_priceController.text.trim().replaceAll(',', '')),
-        category: _categories[_selectedTypeIndex],
-        description: _descriptionController.text.trim().isNotEmpty
-            ? _descriptionController.text.trim()
-            : null,
-        address: _addressController.text.trim().isNotEmpty
-            ? _addressController.text.trim()
-            : null,
+        title: title,
+        price: price,
+        category: category,
+        description: description,
+        address: address,
         city: 'Sylhet',
-        bedroomCount: _isApartmentType ? _bedroomCount : null,
-        bathroomCount: _isApartmentType ? _bathroomCount : null,
-        amenities: _selectedAmenities.isNotEmpty
-            ? _selectedAmenities.toList()
-            : null,
-        images: imageUrls.isNotEmpty ? imageUrls : null,
+        bedroomCount: bedroomCountValue,
+        bathroomCount: bathroomCountValue,
+        amenities: amenities,
+        images: images,
       );
 
       if (mounted) {
@@ -154,7 +211,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
           'Property listed successfully!',
           isError: false,
         );
-        Navigator.pop(context, true); // Return true to indicate success
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
@@ -165,440 +222,801 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isSubmitting = false);
+        setState(() {
+          _isSubmitting = false;
+        });
       }
     }
   }
 
-  bool get _isApartmentType =>
-      _selectedTypeIndex == 0 || _selectedTypeIndex == 1;
+  void _toggleAmenity(String amenity) {
+    setState(() {
+      bool isSelected = _selectedAmenities.contains(amenity);
+      if (isSelected) {
+        _selectedAmenities.remove(amenity);
+      } else {
+        _selectedAmenities.add(amenity);
+      }
+    });
+  }
+
+  void _selectType(int index) {
+    setState(() {
+      _selectedTypeIndex = index;
+    });
+  }
+
+  void _updateBedroomCount(int value) {
+    setState(() {
+      _bedroomCount = value;
+    });
+  }
+
+  void _updateBathroomCount(int value) {
+    setState(() {
+      _bathroomCount = value;
+    });
+  }
+
+  IconData _getAmenityIcon(String name) {
+    if (name == 'Lift') {
+      return Icons.elevator;
+    } else if (name == 'Generator') {
+      return Icons.bolt;
+    } else if (name == 'WiFi') {
+      return Icons.wifi;
+    } else if (name == 'Parking') {
+      return Icons.local_parking;
+    } else if (name == 'Gas Supply') {
+      return Icons.local_fire_department;
+    } else if (name == 'CCTV') {
+      return Icons.videocam;
+    } else if (name == 'Rooftop Access') {
+      return Icons.roofing;
+    } else if (name == 'Security Guard') {
+      return Icons.security;
+    } else {
+      return Icons.check_circle_outline;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    ColorScheme colorScheme = Theme.of(context).colorScheme;
+    TextTheme textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        backgroundColor: colorScheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          "Add New Property",
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
-          ),
-        ),
-        centerTitle: true,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-            height: 1,
-          ),
-        ),
-      ),
+      appBar: _buildAppBar(colorScheme, textTheme),
       body: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: 120,
-          ),
+        child: _isMobile
+            ? _buildMobileLayout(colorScheme, textTheme)
+            : _buildDesktopLayout(colorScheme, textTheme),
+      ),
+      bottomSheet: _buildBottomSheet(colorScheme),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+  ) {
+    return AppBar(
+      backgroundColor: colorScheme.surface,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
+        onPressed: () {
+          Navigator.pop(context);
+        },
+      ),
+      title: Text(
+        "Add New Property",
+        style: textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: colorScheme.onSurface,
+        ),
+      ),
+      centerTitle: true,
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Container(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+          height: 1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(ColorScheme colorScheme, TextTheme textTheme) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 120),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildPhotosSection(colorScheme, textTheme),
+          const SizedBox(height: 24),
+          _buildPropertyNameField(colorScheme),
+          const SizedBox(height: 16),
+          _buildPriceField(colorScheme),
+          const SizedBox(height: 16),
+          _buildPropertyTypeSection(colorScheme),
+          const SizedBox(height: 24),
+          if (_isApartmentType) _buildRoomsSection(colorScheme, textTheme),
+          _buildAddressField(colorScheme),
+          const SizedBox(height: 24),
+          _buildAmenitiesSection(colorScheme, textTheme),
+          const SizedBox(height: 24),
+          _buildDescriptionField(colorScheme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopLayout(ColorScheme colorScheme, TextTheme textTheme) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(left: 40, right: 40, top: 24, bottom: 120),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- Photos Section ---
+              _buildPhotosSection(colorScheme, textTheme),
+              const SizedBox(height: 32),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    "Property Photos",
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildPropertyNameField(colorScheme),
+                        const SizedBox(height: 20),
+                        _buildPriceField(colorScheme),
+                        const SizedBox(height: 20),
+                        _buildAddressField(colorScheme),
+                      ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      "${_selectedImages.length}/10",
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.primary,
-                      ),
+                  const SizedBox(width: 32),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildPropertyTypeSection(colorScheme),
+                        const SizedBox(height: 24),
+                        if (_isApartmentType)
+                          _buildRoomsSection(colorScheme, textTheme),
+                      ],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 112,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  clipBehavior: Clip.none,
-                  children: [
-                    // Add Button
-                    if (_selectedImages.length < 10)
-                      GestureDetector(
-                        onTap: _pickImages,
-                        child: Container(
-                          width: 112,
-                          height: 112,
-                          margin: const EdgeInsets.only(right: 12),
-                          decoration: BoxDecoration(
-                            color: colorScheme.primary.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: colorScheme.primary.withValues(alpha: 0.4),
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.add_a_photo,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                "Add Photos",
-                                style: TextStyle(
-                                  color: colorScheme.primary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    // Selected Images
-                    ..._selectedImages.asMap().entries.map((entry) {
-                      return _buildPhotoPreview(entry.value, entry.key);
-                    }),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // --- Property Name ---
-              _buildLabel(context, "Property Name"),
-              _buildTextFormField(
-                controller: _titleController,
-                hint: "e.g. Sunny 3BHK in Dhanmondi",
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a property name';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 16),
-
-              // --- Price ---
-              _buildLabel(context, "Monthly Rent"),
-              _buildTextFormField(
-                controller: _priceController,
-                hint: "25000",
-                prefixText: "৳ ",
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter rent amount';
-                  }
-                  final price = num.tryParse(value.replaceAll(',', ''));
-                  if (price == null || price <= 0) {
-                    return 'Please enter a valid amount';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 16),
-
-              // --- Property Type Pills ---
-              _buildLabel(context, "Property Type"),
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.3,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: List.generate(_categoryLabels.length, (index) {
-                    return _buildTypePill(
-                      context,
-                      _categoryLabels[index],
-                      index,
-                    );
-                  }),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // --- Rooms & Layout (only for apartment types) ---
-              if (_isApartmentType) ...[
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.03),
-                        blurRadius: 20,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Rooms & Layout",
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildCounterRow(
-                        context,
-                        "Bedrooms",
-                        Icons.bed,
-                        _bedroomCount,
-                        (val) => setState(() => _bedroomCount = val),
-                      ),
-                      Divider(
-                        height: 32,
-                        color: colorScheme.outlineVariant.withValues(
-                          alpha: 0.3,
-                        ),
-                      ),
-                      _buildCounterRow(
-                        context,
-                        "Bathrooms",
-                        Icons.bathtub_outlined,
-                        _bathroomCount,
-                        (val) => setState(() => _bathroomCount = val),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ],
-
-              // --- Location ---
-              _buildLabel(context, "Address"),
-              _buildTextFormField(
-                controller: _addressController,
-                hint: "e.g. House 12, Road 4, Sector 7, Uttara",
-              ),
-
-              const SizedBox(height: 24),
-
-              // --- Amenities ---
-              Text(
-                "Amenities",
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: _amenitiesList.map((amenity) {
-                  final isSelected = _selectedAmenities.contains(amenity);
-                  return InkWell(
-                    onTap: () {
-                      setState(() {
-                        if (isSelected) {
-                          _selectedAmenities.remove(amenity);
-                        } else {
-                          _selectedAmenities.add(amenity);
-                        }
-                      });
-                    },
-                    borderRadius: BorderRadius.circular(100),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? colorScheme.primary.withValues(alpha: 0.1)
-                            : colorScheme.surfaceContainerHighest.withValues(
-                                alpha: 0.3,
-                              ),
-                        borderRadius: BorderRadius.circular(100),
-                        border: Border.all(
-                          color: isSelected
-                              ? colorScheme.primary.withValues(alpha: 0.3)
-                              : colorScheme.outlineVariant.withValues(
-                                  alpha: 0.3,
-                                ),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isSelected ? Icons.check : _getAmenityIcon(amenity),
-                            size: 18,
-                            color: isSelected
-                                ? colorScheme.primary
-                                : colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            amenity,
-                            style: TextStyle(
-                              color: isSelected
-                                  ? colorScheme.primary
-                                  : colorScheme.onSurfaceVariant,
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.w500,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-
-              const SizedBox(height: 24),
-
-              // --- Description ---
-              _buildLabel(context, "Description (Optional)"),
-              TextFormField(
-                controller: _descriptionController,
-                maxLines: 4,
-                style: TextStyle(color: colorScheme.onSurface),
-                decoration: InputDecoration(
-                  hintText:
-                      "Describe the property features, nearby landmarks, and rules...",
-                  hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-                  filled: true,
-                  fillColor: colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.3,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.all(16),
-                ),
-              ),
+              const SizedBox(height: 32),
+              _buildAmenitiesSection(colorScheme, textTheme),
+              const SizedBox(height: 32),
+              _buildDescriptionField(colorScheme),
             ],
-          ),
-        ),
-      ),
-
-      // --- Sticky Bottom Action ---
-      bottomSheet: Container(
-        padding: EdgeInsets.fromLTRB(
-          20,
-          16,
-          20,
-          16 + MediaQuery.of(context).padding.bottom,
-        ),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          border: Border(
-            top: BorderSide(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-            ),
-          ),
-        ),
-        child: SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton(
-            onPressed: _isSubmitting ? null : _submitProperty,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
-              disabledBackgroundColor: colorScheme.primary.withValues(
-                alpha: 0.5,
-              ),
-              elevation: 4,
-              shadowColor: colorScheme.primary.withValues(alpha: 0.3),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(100),
-              ),
-            ),
-            child: _isSubmitting
-                ? SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: colorScheme.onPrimary,
-                    ),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Text(
-                        "List Property",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward, size: 20),
-                    ],
-                  ),
           ),
         ),
       ),
     );
   }
 
-  // --- Helpers ---
+  Widget _buildPhotosSection(ColorScheme colorScheme, TextTheme textTheme) {
+    double photoSize = _isMobile ? 112 : 140;
 
-  Widget _buildLabel(BuildContext context, String text) {
-    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Property Photos",
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                "${_selectedImages.length}/10",
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: photoSize,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            children: _buildPhotosList(colorScheme, photoSize),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildPhotosList(ColorScheme colorScheme, double photoSize) {
+    List<Widget> widgets = [];
+
+    if (_selectedImages.length < 10) {
+      widgets.add(_buildAddPhotoButton(colorScheme, photoSize));
+    }
+
+    for (int i = 0; i < _selectedImages.length; i++) {
+      widgets.add(
+        _buildPhotoPreview(_selectedImages[i], i, colorScheme, photoSize),
+      );
+    }
+
+    return widgets;
+  }
+
+  Widget _buildAddPhotoButton(ColorScheme colorScheme, double photoSize) {
+    return GestureDetector(
+      onTap: _pickImages,
+      child: Container(
+        width: photoSize,
+        height: photoSize,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: colorScheme.primary.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colorScheme.primary.withValues(alpha: 0.4)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colorScheme.primary,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.add_a_photo,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Add Photos",
+              style: TextStyle(
+                color: colorScheme.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoPreview(
+    XFile image,
+    int index,
+    ColorScheme colorScheme,
+    double photoSize,
+  ) {
+    return Container(
+      width: photoSize,
+      height: photoSize,
+      margin: const EdgeInsets.only(right: 12),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.file(
+              File(image.path),
+              width: photoSize,
+              height: photoSize,
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: () {
+                _removeImage(index);
+              },
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: colorScheme.error.withValues(alpha: 0.9),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 14),
+              ),
+            ),
+          ),
+          if (index == 0)
+            Positioned(
+              bottom: 4,
+              left: 4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'Cover',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPropertyNameField(ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(colorScheme, "Property Name"),
+        _buildTextFormField(
+          colorScheme: colorScheme,
+          controller: _titleController,
+          hint: "e.g. Sunny 3BHK in Dhanmondi",
+          validator: (String? value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Please enter a property name';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPriceField(ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(colorScheme, "Monthly Rent"),
+        _buildTextFormField(
+          colorScheme: colorScheme,
+          controller: _priceController,
+          hint: "25000",
+          prefixText: "৳ ",
+          keyboardType: TextInputType.number,
+          validator: (String? value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Please enter rent amount';
+            }
+            String cleanValue = value.replaceAll(',', '');
+            num? price = num.tryParse(cleanValue);
+            if (price == null || price <= 0) {
+              return 'Please enter a valid amount';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPropertyTypeSection(ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(colorScheme, "Property Type"),
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(children: _buildTypePills(colorScheme)),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildTypePills(ColorScheme colorScheme) {
+    List<Widget> pills = [];
+
+    for (int i = 0; i < _categoryLabels.length; i++) {
+      pills.add(_buildTypePill(colorScheme, _categoryLabels[i], i));
+    }
+
+    return pills;
+  }
+
+  Widget _buildTypePill(ColorScheme colorScheme, String text, int index) {
+    bool isSelected = _selectedTypeIndex == index;
+
+    Color backgroundColor;
+    if (isSelected) {
+      backgroundColor = colorScheme.surface;
+    } else {
+      backgroundColor = Colors.transparent;
+    }
+
+    Color textColor;
+    if (isSelected) {
+      textColor = colorScheme.primary;
+    } else {
+      textColor = colorScheme.onSurfaceVariant;
+    }
+
+    FontWeight fontWeight;
+    if (isSelected) {
+      fontWeight = FontWeight.bold;
+    } else {
+      fontWeight = FontWeight.w500;
+    }
+
+    List<BoxShadow>? boxShadow;
+    if (isSelected) {
+      boxShadow = [
+        BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4),
+      ];
+    }
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          _selectType(index);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: boxShadow,
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              color: textColor,
+              fontWeight: fontWeight,
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoomsSection(ColorScheme colorScheme, TextTheme textTheme) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Rooms & Layout",
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildCounterRow(
+                colorScheme,
+                "Bedrooms",
+                Icons.bed,
+                _bedroomCount,
+                _updateBedroomCount,
+              ),
+              Divider(
+                height: 32,
+                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+              ),
+              _buildCounterRow(
+                colorScheme,
+                "Bathrooms",
+                Icons.bathtub_outlined,
+                _bathroomCount,
+                _updateBathroomCount,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildCounterRow(
+    ColorScheme colorScheme,
+    String title,
+    IconData icon,
+    int count,
+    void Function(int) onChanged,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: colorScheme.onSurfaceVariant, size: 22),
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: TextStyle(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w500,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: Row(
+            children: [
+              _buildRoundButton(colorScheme, Icons.remove, () {
+                int newValue = count - 1;
+                if (newValue < 1) {
+                  newValue = 1;
+                }
+                onChanged(newValue);
+              }, false),
+              SizedBox(
+                width: 32,
+                child: Text(
+                  count.toString(),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              _buildRoundButton(colorScheme, Icons.add, () {
+                onChanged(count + 1);
+              }, true),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRoundButton(
+    ColorScheme colorScheme,
+    IconData icon,
+    VoidCallback onTap,
+    bool isPrimary,
+  ) {
+    Color backgroundColor;
+    if (isPrimary) {
+      backgroundColor = colorScheme.surface;
+    } else {
+      backgroundColor = Colors.transparent;
+    }
+
+    Color iconColor;
+    if (isPrimary) {
+      iconColor = colorScheme.primary;
+    } else {
+      iconColor = colorScheme.onSurfaceVariant;
+    }
+
+    List<BoxShadow>? boxShadow;
+    if (isPrimary) {
+      boxShadow = [
+        BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
+      ];
+    }
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(100),
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          shape: BoxShape.circle,
+          boxShadow: boxShadow,
+        ),
+        child: Icon(icon, size: 20, color: iconColor),
+      ),
+    );
+  }
+
+  Widget _buildAddressField(ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(colorScheme, "Address"),
+        _buildTextFormField(
+          colorScheme: colorScheme,
+          controller: _addressController,
+          hint: "e.g. House 12, Road 4, Sector 7, Uttara",
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAmenitiesSection(ColorScheme colorScheme, TextTheme textTheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Amenities",
+          style: textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: _buildAmenityChips(colorScheme),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildAmenityChips(ColorScheme colorScheme) {
+    List<Widget> chips = [];
+
+    for (int i = 0; i < _amenitiesList.length; i++) {
+      String amenity = _amenitiesList[i];
+      chips.add(_buildAmenityChip(colorScheme, amenity));
+    }
+
+    return chips;
+  }
+
+  Widget _buildAmenityChip(ColorScheme colorScheme, String amenity) {
+    bool isSelected = _selectedAmenities.contains(amenity);
+
+    Color backgroundColor;
+    if (isSelected) {
+      backgroundColor = colorScheme.primary.withValues(alpha: 0.1);
+    } else {
+      backgroundColor = colorScheme.surfaceContainerHighest.withValues(
+        alpha: 0.3,
+      );
+    }
+
+    Color borderColor;
+    if (isSelected) {
+      borderColor = colorScheme.primary.withValues(alpha: 0.3);
+    } else {
+      borderColor = colorScheme.outlineVariant.withValues(alpha: 0.3);
+    }
+
+    IconData icon;
+    if (isSelected) {
+      icon = Icons.check;
+    } else {
+      icon = _getAmenityIcon(amenity);
+    }
+
+    Color iconColor;
+    if (isSelected) {
+      iconColor = colorScheme.primary;
+    } else {
+      iconColor = colorScheme.onSurfaceVariant;
+    }
+
+    Color textColor;
+    if (isSelected) {
+      textColor = colorScheme.primary;
+    } else {
+      textColor = colorScheme.onSurfaceVariant;
+    }
+
+    FontWeight fontWeight;
+    if (isSelected) {
+      fontWeight = FontWeight.w600;
+    } else {
+      fontWeight = FontWeight.w500;
+    }
+
+    return InkWell(
+      onTap: () {
+        _toggleAmenity(amenity);
+      },
+      borderRadius: BorderRadius.circular(100),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: borderColor),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: iconColor),
+            const SizedBox(width: 6),
+            Text(
+              amenity,
+              style: TextStyle(
+                color: textColor,
+                fontWeight: fontWeight,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDescriptionField(ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildLabel(colorScheme, "Description (Optional)"),
+        TextFormField(
+          controller: _descriptionController,
+          maxLines: 4,
+          style: TextStyle(color: colorScheme.onSurface),
+          decoration: InputDecoration(
+            hintText:
+                "Describe the property features, nearby landmarks, and rules...",
+            hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+            filled: true,
+            fillColor: colorScheme.surfaceContainerHighest.withValues(
+              alpha: 0.3,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.all(16),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLabel(ColorScheme colorScheme, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(
@@ -613,13 +1031,13 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
   }
 
   Widget _buildTextFormField({
+    required ColorScheme colorScheme,
     required TextEditingController controller,
     required String hint,
     String? prefixText,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
@@ -658,216 +1076,85 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     );
   }
 
-  Widget _buildTypePill(BuildContext context, String text, int index) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isSelected = _selectedTypeIndex == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedTypeIndex = index),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isSelected ? colorScheme.surface : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 4,
-                    ),
-                  ]
-                : null,
-          ),
-          child: Text(
-            text,
-            style: TextStyle(
-              color: isSelected
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              fontSize: 12,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildBottomSheet(ColorScheme colorScheme) {
+    double bottomPadding = MediaQuery.of(context).padding.bottom;
 
-  Widget _buildCounterRow(
-    BuildContext context,
-    String title,
-    IconData icon,
-    int count,
-    ValueChanged<int> onChanged,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: colorScheme.onSurfaceVariant, size: 22),
-            const SizedBox(width: 12),
-            Text(
-              title,
-              style: TextStyle(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w500,
-                fontSize: 15,
-              ),
-            ),
-          ],
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(100),
-          ),
-          child: Row(
-            children: [
-              _buildRoundButton(
-                context,
-                Icons.remove,
-                () => onChanged(count > 1 ? count - 1 : 1),
-              ),
-              SizedBox(
-                width: 32,
-                child: Text(
-                  count.toString(),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              _buildRoundButton(
-                context,
-                Icons.add,
-                () => onChanged(count + 1),
-                isPrimary: true,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRoundButton(
-    BuildContext context,
-    IconData icon,
-    VoidCallback onTap, {
-    bool isPrimary = false,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(100),
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: isPrimary ? colorScheme.surface : Colors.transparent,
-          shape: BoxShape.circle,
-          boxShadow: isPrimary
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                  ),
-                ]
-              : null,
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: isPrimary ? colorScheme.primary : colorScheme.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPhotoPreview(XFile image, int index) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      width: 112,
-      height: 112,
-      margin: const EdgeInsets.only(right: 12),
-      child: Stack(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.file(
-              File(image.path),
-              width: 112,
-              height: 112,
-              fit: BoxFit.cover,
-            ),
-          ),
-          Positioned(
-            top: 4,
-            right: 4,
-            child: GestureDetector(
-              onTap: () => _removeImage(index),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: colorScheme.error.withValues(alpha: 0.9),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.close, color: Colors.white, size: 14),
-              ),
-            ),
-          ),
-          if (index == 0)
-            Positioned(
-              bottom: 4,
-              left: 4,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  'Cover',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getAmenityIcon(String name) {
-    switch (name) {
-      case 'Lift':
-        return Icons.elevator;
-      case 'Generator':
-        return Icons.bolt;
-      case 'WiFi':
-        return Icons.wifi;
-      case 'Parking':
-        return Icons.local_parking;
-      case 'Gas Supply':
-        return Icons.local_fire_department;
-      case 'CCTV':
-        return Icons.videocam;
-      case 'Rooftop Access':
-        return Icons.roofing;
-      case 'Security Guard':
-        return Icons.security;
-      default:
-        return Icons.check_circle_outline;
+    double horizontalPadding;
+    if (_isMobile) {
+      horizontalPadding = 20;
+    } else {
+      horizontalPadding = 40;
     }
+
+    Widget buttonChild;
+    if (_isSubmitting) {
+      buttonChild = SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: colorScheme.onPrimary,
+        ),
+      );
+    } else {
+      buttonChild = Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          Text(
+            "List Property",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(width: 8),
+          Icon(Icons.arrow_forward, size: 20),
+        ],
+      );
+    }
+
+    VoidCallback? onPressed;
+    if (!_isSubmitting) {
+      onPressed = _submitProperty;
+    }
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        16,
+        horizontalPadding,
+        16 + bottomPadding,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+          ),
+        ),
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+                disabledBackgroundColor: colorScheme.primary.withValues(
+                  alpha: 0.5,
+                ),
+                elevation: 4,
+                shadowColor: colorScheme.primary.withValues(alpha: 0.3),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
+              child: buttonChild,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

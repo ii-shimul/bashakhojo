@@ -20,7 +20,9 @@ class LandlordPropertyCard extends StatefulWidget {
   });
 
   @override
-  State<LandlordPropertyCard> createState() => _LandlordPropertyCardState();
+  State<LandlordPropertyCard> createState() {
+    return _LandlordPropertyCardState();
+  }
 }
 
 class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
@@ -43,21 +45,32 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
   }
 
   Future<void> _toggleAvailability(bool value) async {
-    if (widget.property.id == null || _isUpdating) return;
+    if (widget.property.id == null || _isUpdating) {
+      return;
+    }
 
-    setState(() => _isUpdating = true);
+    setState(() {
+      _isUpdating = true;
+    });
 
     try {
       await PropertyService.updateProperty(widget.property.id!, {
         'is_available': value,
       });
+
       if (mounted) {
-        setState(() => _isAvailable = value);
-        CustomSnackbar.show(
-          context,
-          value ? 'Property marked as available' : 'Property marked as rented',
-          isError: false,
-        );
+        setState(() {
+          _isAvailable = value;
+        });
+
+        String message;
+        if (value) {
+          message = 'Listing marked as available';
+        } else {
+          message = 'Listing marked as rented';
+        }
+
+        CustomSnackbar.show(context, message, isError: false);
       }
     } catch (e) {
       if (mounted) {
@@ -65,77 +78,134 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isUpdating = false);
+        setState(() {
+          _isUpdating = false;
+        });
       }
     }
   }
 
   Future<void> _deleteProperty() async {
-    if (widget.property.id == null || _isDeleting) return;
+    if (widget.property.id == null || _isDeleting) {
+      return;
+    }
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Property'),
-        content: const Text(
-          'Are you sure you want to delete this property? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
+    bool? confirmed = await _showDeleteDialog();
 
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !mounted) {
+      return;
+    }
 
-    setState(() => _isDeleting = true);
+    setState(() {
+      _isDeleting = true;
+    });
 
     try {
       await PropertyService.deleteProperty(widget.property.id!);
+
       if (mounted) {
         CustomSnackbar.show(
           context,
-          'Property deleted successfully',
+          'Listing deleted successfully',
           isError: false,
         );
-        widget.onDeleted?.call();
+
+        if (widget.onDeleted != null) {
+          widget.onDeleted!();
+        }
       }
     } catch (e) {
       debugPrint('Delete error: $e');
+
       if (mounted) {
-        CustomSnackbar.show(context, 'Failed to delete property');
-        setState(() => _isDeleting = false);
+        CustomSnackbar.show(context, 'Failed to delete listing');
+        setState(() {
+          _isDeleting = false;
+        });
       }
     }
   }
 
+  Future<bool?> _showDeleteDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Listing'),
+          content: const Text(
+            'Are you sure you want to delete this listing? This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   String _formatCategory(String category) {
-    return category
-        .replaceAll('_', ' ')
-        .split(' ')
-        .map((word) {
-          if (word.isEmpty) return word;
-          return word[0].toUpperCase() + word.substring(1);
-        })
-        .join(' ');
+    String formatted = category.replaceAll('_', ' ');
+    List<String> words = formatted.split(' ');
+    List<String> capitalizedWords = [];
+
+    for (int i = 0; i < words.length; i++) {
+      String word = words[i];
+      if (word.isEmpty) {
+        capitalizedWords.add(word);
+      } else {
+        String capitalized = word[0].toUpperCase() + word.substring(1);
+        capitalizedWords.add(capitalized);
+      }
+    }
+
+    return capitalizedWords.join(' ');
+  }
+
+  IconData _getAmenityIcon(String amenity) {
+    String lowerAmenity = amenity.toLowerCase();
+
+    if (lowerAmenity == 'wifi') {
+      return Icons.wifi;
+    } else if (lowerAmenity == 'ac') {
+      return Icons.ac_unit;
+    } else if (lowerAmenity == 'parking') {
+      return Icons.local_parking;
+    } else if (lowerAmenity == 'gym') {
+      return Icons.fitness_center;
+    } else if (lowerAmenity == 'pool') {
+      return Icons.pool;
+    } else {
+      return Icons.check_circle_outline;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = widget.colorScheme;
-    final textTheme = widget.textTheme;
-    final property = widget.property;
+    ColorScheme colorScheme = widget.colorScheme;
+    TextTheme textTheme = widget.textTheme;
+    PropertyData property = widget.property;
+
+    double opacity;
+    if (_isDeleting) {
+      opacity = 0.5;
+    } else {
+      opacity = 1.0;
+    }
 
     return Opacity(
-      opacity: _isDeleting ? 0.5 : 1.0,
+      opacity: opacity,
       child: Container(
         decoration: BoxDecoration(
           color: colorScheme.surface,
@@ -151,330 +221,372 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
-            // Image Section with Status Badge
-            SizedBox(
-              height: 180,
-              width: double.infinity,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  ColorFiltered(
-                    colorFilter: !_isAvailable
-                        ? const ColorFilter.mode(
-                            Colors.grey,
-                            BlendMode.saturation,
-                          )
-                        : const ColorFilter.mode(
-                            Colors.transparent,
-                            BlendMode.multiply,
-                          ),
-                    child: Image.network(
-                      property.imageUrl,
-                      fit: BoxFit.cover,
-                      frameBuilder:
-                          (context, child, frame, wasSynchronouslyLoaded) {
-                            if (wasSynchronouslyLoaded) return child;
-                            return AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              child: frame != null
-                                  ? child
-                                  : Container(
-                                      color:
-                                          colorScheme.surfaceContainerHighest,
-                                      child: Center(
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: colorScheme.primary,
-                                        ),
-                                      ),
-                                    ),
-                            );
-                          },
-                      errorBuilder: (_, __, ___) => Container(
-                        color: colorScheme.surfaceContainerHighest,
-                        child: Center(
-                          child: Icon(
-                            Icons.broken_image_outlined,
-                            size: 48,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Gradient Overlay
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.6),
-                        ],
-                        stops: const [0.5, 1.0],
-                      ),
-                    ),
-                  ),
-                  // Price Tag
-                  Positioned(
-                    bottom: 16,
-                    left: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface.withValues(alpha: 0.95),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: RichText(
-                        text: TextSpan(
-                          text: property.price,
-                          style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: '/mo',
-                              style: TextStyle(
-                                color: colorScheme.onSurfaceVariant,
-                                fontSize: 12,
-                                fontWeight: FontWeight.normal,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Status Badge
-                  Positioned(
-                    top: 16,
-                    right: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _isAvailable
-                            ? Colors.green.withValues(alpha: 0.9)
-                            : Colors.grey[700]!.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        _isAvailable ? 'AVAILABLE' : 'RENTED',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Content Section
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Category
-                  Text(
-                    _formatCategory(property.category),
-                    style: TextStyle(
-                      color: colorScheme.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  // Title
-                  Text(
-                    property.title,
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Noto Sans Bengali',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Location
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        size: 16,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          property.location,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: colorScheme.onSurfaceVariant,
-                            fontFamily: 'Noto Sans Bengali',
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Features Row
-                  Row(children: _buildFeatures()),
-
-                  const SizedBox(height: 16),
-                  Divider(
-                    height: 1,
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Actions Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Availability Switch
-                      Row(
-                        children: [
-                          SizedBox(
-                            height: 24,
-                            child: _isUpdating
-                                ? SizedBox(
-                                    width: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: colorScheme.primary,
-                                    ),
-                                  )
-                                : Switch.adaptive(
-                                    value: _isAvailable,
-                                    activeColor: colorScheme.primary,
-                                    onChanged: _toggleAvailability,
-                                    materialTapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _isAvailable ? 'Available' : 'Rented',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: _isAvailable
-                                  ? colorScheme.primary
-                                  : colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Action Buttons
-                      Row(
-                        children: [
-                          _ActionButton(
-                            icon: Icons.edit_outlined,
-                            label: 'Edit',
-                            colorScheme: colorScheme,
-                            onTap: widget.onEdit,
-                          ),
-                          const SizedBox(width: 8),
-                          _IconButton(
-                            icon: Icons.delete_outline,
-                            color: Colors.red,
-                            onTap: _deleteProperty,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            _buildImageSection(colorScheme, property),
+            _buildContentSection(colorScheme, textTheme, property),
           ],
         ),
       ),
     );
   }
 
-  List<Widget> _buildFeatures() {
-    final property = widget.property;
-    final colorScheme = widget.colorScheme;
-    final isApartment =
+  Widget _buildImageSection(ColorScheme colorScheme, PropertyData property) {
+    ColorFilter colorFilter;
+    if (!_isAvailable) {
+      colorFilter = const ColorFilter.mode(Colors.grey, BlendMode.saturation);
+    } else {
+      colorFilter = const ColorFilter.mode(
+        Colors.transparent,
+        BlendMode.multiply,
+      );
+    }
+
+    return SizedBox(
+      height: 180,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ColorFiltered(
+            colorFilter: colorFilter,
+            child: Image.network(
+              property.imageUrl,
+              fit: BoxFit.cover,
+              frameBuilder: (
+                BuildContext context,
+                Widget child,
+                int? frame,
+                bool wasSynchronouslyLoaded,
+              ) {
+                if (wasSynchronouslyLoaded) {
+                  return child;
+                }
+
+                if (frame != null) {
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: child,
+                  );
+                } else {
+                  return Container(
+                    color: colorScheme.surfaceContainerHighest,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  );
+                }
+              },
+              errorBuilder: (
+                BuildContext context,
+                Object error,
+                StackTrace? stackTrace,
+              ) {
+                return Container(
+                  color: colorScheme.surfaceContainerHighest,
+                  child: Center(
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      size: 48,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          _buildGradientOverlay(),
+          _buildPriceTag(colorScheme, property),
+          _buildStatusBadge(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGradientOverlay() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            Colors.black.withValues(alpha: 0.6),
+          ],
+          stops: const [0.5, 1.0],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPriceTag(ColorScheme colorScheme, PropertyData property) {
+    return Positioned(
+      bottom: 16,
+      left: 16,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: colorScheme.surface.withValues(alpha: 0.95),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: RichText(
+          text: TextSpan(
+            text: property.price,
+            style: TextStyle(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+            children: [
+              TextSpan(
+                text: '/mo',
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge() {
+    Color badgeColor;
+    String badgeText;
+
+    if (_isAvailable) {
+      badgeColor = Colors.green.withValues(alpha: 0.9);
+      badgeText = 'AVAILABLE';
+    } else {
+      badgeColor = Colors.grey[700]!.withValues(alpha: 0.9);
+      badgeText = 'RENTED';
+    }
+
+    return Positioned(
+      top: 16,
+      right: 16,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: badgeColor,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          badgeText,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContentSection(
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+    PropertyData property,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildCategory(colorScheme, property),
+          const SizedBox(height: 4),
+          _buildTitle(textTheme, property),
+          const SizedBox(height: 8),
+          _buildLocation(colorScheme, property),
+          const SizedBox(height: 12),
+          Row(children: _buildFeatureChips(colorScheme, property)),
+          const SizedBox(height: 16),
+          Divider(
+            height: 1,
+            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: 12),
+          _buildActionsRow(colorScheme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategory(ColorScheme colorScheme, PropertyData property) {
+    return Text(
+      _formatCategory(property.category),
+      style: TextStyle(
+        color: colorScheme.primary,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  Widget _buildTitle(TextTheme textTheme, PropertyData property) {
+    return Text(
+      property.title,
+      style: textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.bold,
+        fontFamily: 'Noto Sans Bengali',
+      ),
+    );
+  }
+
+  Widget _buildLocation(ColorScheme colorScheme, PropertyData property) {
+    return Row(
+      children: [
+        Icon(
+          Icons.location_on,
+          size: 16,
+          color: colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            property.location,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontFamily: 'Noto Sans Bengali',
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildFeatureChips(
+    ColorScheme colorScheme,
+    PropertyData property,
+  ) {
+    bool isApartment =
         property.category == 'family' || property.category == 'bachelor';
 
-    List<_FeatureChip> chips = [];
+    List<Widget> chips = [];
 
     if (isApartment) {
       if (property.bedroomCount != null) {
-        chips.add(
-          _FeatureChip(
-            icon: Icons.bed,
-            text: '${property.bedroomCount} Bed',
-            colorScheme: colorScheme,
-          ),
-        );
+        chips.add(LandlordFeatureChip(
+          icon: Icons.bed,
+          text: '${property.bedroomCount} Bed',
+          colorScheme: colorScheme,
+        ));
       }
       if (property.bathroomCount != null) {
-        chips.add(
-          _FeatureChip(
-            icon: Icons.bathtub_outlined,
-            text: '${property.bathroomCount} Bath',
-            colorScheme: colorScheme,
-          ),
-        );
+        chips.add(LandlordFeatureChip(
+          icon: Icons.bathtub_outlined,
+          text: '${property.bathroomCount} Bath',
+          colorScheme: colorScheme,
+        ));
       }
     } else {
-      final amenities = property.amenities ?? [];
-      chips = amenities
-          .take(2)
-          .map(
-            (amenity) => _FeatureChip(
-              icon: _getAmenityIcon(amenity),
-              text: amenity,
-              colorScheme: colorScheme,
-            ),
-          )
-          .toList();
+      List<String> amenities = property.amenities ?? [];
+      int count = 0;
+
+      for (int i = 0; i < amenities.length && count < 2; i++) {
+        String amenity = amenities[i];
+        chips.add(LandlordFeatureChip(
+          icon: _getAmenityIcon(amenity),
+          text: amenity,
+          colorScheme: colorScheme,
+        ));
+        count++;
+      }
     }
 
     return chips;
   }
 
-  IconData _getAmenityIcon(String amenity) {
-    switch (amenity.toLowerCase()) {
-      case 'wifi':
-        return Icons.wifi;
-      case 'ac':
-        return Icons.ac_unit;
-      case 'parking':
-        return Icons.local_parking;
-      case 'gym':
-        return Icons.fitness_center;
-      case 'pool':
-        return Icons.pool;
-      default:
-        return Icons.check_circle_outline;
+  Widget _buildActionsRow(ColorScheme colorScheme) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _buildAvailabilitySwitch(colorScheme),
+        _buildActionButtons(colorScheme),
+      ],
+    );
+  }
+
+  Widget _buildAvailabilitySwitch(ColorScheme colorScheme) {
+    Widget switchWidget;
+    if (_isUpdating) {
+      switchWidget = SizedBox(
+        width: 24,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: colorScheme.primary,
+        ),
+      );
+    } else {
+      switchWidget = Switch.adaptive(
+        value: _isAvailable,
+        activeColor: colorScheme.primary,
+        onChanged: _toggleAvailability,
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      );
     }
+
+    String statusText;
+    Color statusColor;
+
+    if (_isAvailable) {
+      statusText = 'Available';
+      statusColor = colorScheme.primary;
+    } else {
+      statusText = 'Rented';
+      statusColor = colorScheme.onSurfaceVariant;
+    }
+
+    return Row(
+      children: [
+        SizedBox(height: 24, child: switchWidget),
+        const SizedBox(width: 8),
+        Text(
+          statusText,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: statusColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons(ColorScheme colorScheme) {
+    return Row(
+      children: [
+        ActionButton(
+          icon: Icons.edit_outlined,
+          label: 'Edit',
+          colorScheme: colorScheme,
+          onTap: widget.onEdit,
+        ),
+        const SizedBox(width: 8),
+        IconActionButton(
+          icon: Icons.delete_outline,
+          color: Colors.red,
+          onTap: _deleteProperty,
+        ),
+      ],
+    );
   }
 }
 
-class _FeatureChip extends StatelessWidget {
+class LandlordFeatureChip extends StatelessWidget {
   final IconData icon;
   final String text;
   final ColorScheme colorScheme;
 
-  const _FeatureChip({
+  const LandlordFeatureChip({
+    super.key,
     required this.icon,
     required this.text,
     required this.colorScheme,
@@ -513,13 +625,14 @@ class _FeatureChip extends StatelessWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
+class ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final ColorScheme colorScheme;
   final VoidCallback? onTap;
 
-  const _ActionButton({
+  const ActionButton({
+    super.key,
     required this.icon,
     required this.label,
     required this.colorScheme,
@@ -556,12 +669,17 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-class _IconButton extends StatelessWidget {
+class IconActionButton extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback? onTap;
 
-  const _IconButton({required this.icon, required this.color, this.onTap});
+  const IconActionButton({
+    super.key,
+    required this.icon,
+    required this.color,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,31 +1,43 @@
 import 'package:bashakhojo/services/supabase_service.dart';
 
 class PropertyService {
-  static final _client = SupabaseService.client;
+  static String? getCurrentUserId() {
+    return SupabaseService.client.auth.currentUser?.id;
+  }
 
   static Future<List<Map<String, dynamic>>> getProperties() async {
-    final response = await _client
+    final response = await SupabaseService.client
         .from('properties')
         .select()
         .eq('is_available', true)
         .order('created_at', ascending: false);
-    return List<Map<String, dynamic>>.from(response);
+
+    List<Map<String, dynamic>> properties = [];
+    for (var item in response) {
+      properties.add(Map<String, dynamic>.from(item));
+    }
+    return properties;
   }
 
   static Future<List<Map<String, dynamic>>> getPropertiesByCategory(
     String category,
   ) async {
-    final response = await _client
+    final response = await SupabaseService.client
         .from('properties')
         .select()
         .eq('category', category)
         .eq('is_available', true)
         .order('created_at', ascending: false);
-    return List<Map<String, dynamic>>.from(response);
+
+    List<Map<String, dynamic>> properties = [];
+    for (var item in response) {
+      properties.add(Map<String, dynamic>.from(item));
+    }
+    return properties;
   }
 
   static Future<Map<String, dynamic>?> getProperty(String propertyId) async {
-    final response = await _client
+    final response = await SupabaseService.client
         .from('properties')
         .select()
         .eq('id', propertyId)
@@ -36,12 +48,17 @@ class PropertyService {
   static Future<List<Map<String, dynamic>>> getPropertiesByOwner(
     String ownerId,
   ) async {
-    final response = await _client
+    final response = await SupabaseService.client
         .from('properties')
         .select()
         .eq('owner_id', ownerId)
         .order('created_at', ascending: false);
-    return List<Map<String, dynamic>>.from(response);
+
+    List<Map<String, dynamic>> properties = [];
+    for (var item in response) {
+      properties.add(Map<String, dynamic>.from(item));
+    }
+    return properties;
   }
 
   static Future<Map<String, dynamic>> createProperty({
@@ -56,26 +73,31 @@ class PropertyService {
     List<String>? amenities,
     List<String>? images,
   }) async {
-    final user = _client.auth.currentUser;
-    if (user == null) throw Exception('User not authenticated');
+    String? userId = getCurrentUserId();
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
 
-    final response = await _client
+    Map<String, dynamic> propertyData = {
+      'owner_id': userId,
+      'title': title,
+      'description': description,
+      'address': address,
+      'city': city ?? 'Sylhet',
+      'price': price,
+      'category': category,
+      'bedroom_count': bedroomCount,
+      'bathroom_count': bathroomCount,
+      'amenities': amenities,
+      'images': images,
+    };
+
+    final response = await SupabaseService.client
         .from('properties')
-        .insert({
-          'owner_id': user.id,
-          'title': title,
-          'description': description,
-          'address': address,
-          'city': city ?? 'Sylhet',
-          'price': price,
-          'category': category,
-          'bedroom_count': bedroomCount,
-          'bathroom_count': bathroomCount,
-          'amenities': amenities,
-          'images': images,
-        })
+        .insert(propertyData)
         .select()
         .single();
+
     return response;
   }
 
@@ -83,33 +105,44 @@ class PropertyService {
     String propertyId,
     Map<String, dynamic> updates,
   ) async {
-    await _client.from('properties').update(updates).eq('id', propertyId);
+    await SupabaseService.client
+        .from('properties')
+        .update(updates)
+        .eq('id', propertyId);
   }
 
   static Future<void> deleteProperty(String propertyId) async {
-    final property = await getProperty(propertyId);
+    Map<String, dynamic>? property = await getProperty(propertyId);
 
     if (property != null && property['images'] != null) {
-      final images = List<String>.from(property['images']);
-      for (final imageUrl in images) {
+      List<String> images = List<String>.from(property['images']);
+
+      for (String imageUrl in images) {
         try {
-          final uri = Uri.parse(imageUrl);
-          final pathSegments = uri.pathSegments;
-          final bucketIndex = pathSegments.indexOf('property-images');
+          Uri uri = Uri.parse(imageUrl);
+          List<String> pathSegments = uri.pathSegments;
+
+          int bucketIndex = pathSegments.indexOf('property-images');
+
           if (bucketIndex != -1 && bucketIndex < pathSegments.length - 1) {
-            final filePath = pathSegments.sublist(bucketIndex + 1).join('/');
-            await _client.storage.from('property-images').remove([filePath]);
+            String filePath = pathSegments.sublist(bucketIndex + 1).join('/');
+
+            await SupabaseService.client.storage.from('property-images').remove(
+              [filePath],
+            );
           }
-        } catch (_) {}
+        } catch (e) {}
       }
     }
 
-    // Remove property from all users' saved_properties arrays
-    await _client.rpc(
+    await SupabaseService.client.rpc(
       'remove_property_from_saved',
       params: {'property_id_to_remove': propertyId},
     );
 
-    await _client.from('properties').delete().eq('id', propertyId);
+    await SupabaseService.client
+        .from('properties')
+        .delete()
+        .eq('id', propertyId);
   }
 }

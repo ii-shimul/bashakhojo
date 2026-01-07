@@ -3,7 +3,6 @@ import 'package:bashakhojo/screens/home/tenant_home.dart';
 import 'package:bashakhojo/screens/property_details/property_details.dart';
 import 'package:bashakhojo/services/saved_properties_notifier.dart';
 import 'package:bashakhojo/services/user_service.dart';
-import 'package:fluentui_icons/fluentui_icons.dart';
 import 'package:flutter/material.dart';
 
 class PropertyCard extends StatefulWidget {
@@ -19,7 +18,9 @@ class PropertyCard extends StatefulWidget {
   });
 
   @override
-  State<PropertyCard> createState() => _PropertyCardState();
+  State<PropertyCard> createState() {
+    return _PropertyCardState();
+  }
 }
 
 class _PropertyCardState extends State<PropertyCard> {
@@ -33,23 +34,36 @@ class _PropertyCardState extends State<PropertyCard> {
   }
 
   Future<void> _checkIfSaved() async {
-    if (widget.property.id == null) return;
-    final saved = await UserService.isPropertySaved(widget.property.id!);
+    if (widget.property.id == null) {
+      return;
+    }
+
+    bool saved = await UserService.isPropertySaved(widget.property.id!);
+
     if (mounted) {
-      setState(() => _isSaved = saved);
+      setState(() {
+        _isSaved = saved;
+      });
     }
   }
 
   Future<void> _toggleSave() async {
-    if (widget.property.id == null || _isLoading) return;
+    if (widget.property.id == null || _isLoading) {
+      return;
+    }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       if (_isSaved) {
         await UserService.unsaveProperty(widget.property.id!);
+
         if (mounted) {
-          setState(() => _isSaved = false);
+          setState(() {
+            _isSaved = false;
+          });
           SavedPropertiesNotifier().notifyChange();
           CustomSnackbar.show(
             context,
@@ -59,8 +73,11 @@ class _PropertyCardState extends State<PropertyCard> {
         }
       } else {
         await UserService.saveProperty(widget.property.id!);
+
         if (mounted) {
-          setState(() => _isSaved = true);
+          setState(() {
+            _isSaved = true;
+          });
           SavedPropertiesNotifier().notifyChange();
           CustomSnackbar.show(
             context,
@@ -75,27 +92,66 @@ class _PropertyCardState extends State<PropertyCard> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
 
   String _formatCategory(String category) {
-    return category
-        .replaceAll('_', ' ')
-        .split(' ')
-        .map((word) {
-          if (word.isEmpty) return word;
-          return word[0].toUpperCase() + word.substring(1);
-        })
-        .join(' ');
+    String formatted = category.replaceAll('_', ' ');
+    List<String> words = formatted.split(' ');
+    List<String> capitalizedWords = [];
+
+    for (int i = 0; i < words.length; i++) {
+      String word = words[i];
+      if (word.isEmpty) {
+        capitalizedWords.add(word);
+      } else {
+        String capitalized = word[0].toUpperCase() + word.substring(1);
+        capitalizedWords.add(capitalized);
+      }
+    }
+
+    return capitalizedWords.join(' ');
+  }
+
+  void _navigateToDetails() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (BuildContext context) {
+          return PropertyDetails(property: widget.property);
+        },
+      ),
+    );
+  }
+
+  IconData _getAmenityIcon(String amenity) {
+    String lowerAmenity = amenity.toLowerCase();
+
+    if (lowerAmenity == 'wifi') {
+      return Icons.wifi;
+    } else if (lowerAmenity == 'ac') {
+      return Icons.ac_unit;
+    } else if (lowerAmenity == 'parking') {
+      return Icons.local_parking;
+    } else if (lowerAmenity == 'gym') {
+      return Icons.fitness_center;
+    } else if (lowerAmenity == 'pool') {
+      return Icons.pool;
+    } else {
+      return Icons.check_circle_outline;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = widget.colorScheme;
-    final textTheme = widget.textTheme;
-    final property = widget.property;
+    ColorScheme colorScheme = widget.colorScheme;
+    TextTheme textTheme = widget.textTheme;
+    PropertyData property = widget.property;
+
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -111,280 +167,309 @@ class _PropertyCardState extends State<PropertyCard> {
       padding: const EdgeInsets.all(12),
       child: Column(
         children: [
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: AspectRatio(
-                  aspectRatio: 4 / 3,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
-                    ),
-                    child: Image.network(
-                      property.imageUrl,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      frameBuilder:
-                          (context, child, frame, wasSynchronouslyLoaded) {
-                            if (wasSynchronouslyLoaded) return child;
-                            return AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              child: frame != null
-                                  ? child
-                                  : Center(
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: colorScheme.primary,
-                                      ),
-                                    ),
-                            );
-                          },
-                      errorBuilder: (_, __, ___) => Center(
-                        child: Icon(
-                          Icons.broken_image_outlined,
-                          size: 48,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 12,
-                right: 12,
-                child: GestureDetector(
-                  onTap: _toggleSave,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: _isSaved
-                          ? colorScheme.primary
-                          : colorScheme.primary.withValues(alpha: 0.7),
-                      shape: BoxShape.circle,
-                    ),
-                    child: _isLoading
-                        ? Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Icon(
-                            _isSaved
-                                ? Icons.bookmark
-                                : Icons.bookmark_add_outlined,
-                            color: _isSaved ? Colors.white : Colors.tealAccent,
-                            size: 18,
-                          ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
+          _buildImageSection(colorScheme, property),
           const SizedBox(height: 16),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _formatCategory(property.category),
-                            style: TextStyle(
-                              color: colorScheme.primary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            property.title,
-                            style: textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Noto Sans Bengali',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          property.price,
-                          style: textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        Text(
-                          "/ month",
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 18,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        property.location,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: colorScheme.onSurfaceVariant,
-                          fontFamily: 'Noto Sans Bengali',
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-                Divider(
-                  height: 1,
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                ),
-                const SizedBox(height: 12),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(child: Row(children: _buildFeatures())),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                PropertyDetails(property: property),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colorScheme.primary,
-                        foregroundColor: colorScheme.onPrimary,
-                        elevation: 4,
-                        shadowColor: colorScheme.primary.withValues(alpha: 0.3),
-                        shape: const StadiumBorder(),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 0,
-                        ),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      child: const Text(
-                        "See Details",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          _buildContentSection(colorScheme, textTheme, property),
         ],
       ),
     );
   }
 
-  List<Widget> _buildFeatures() {
-    final property = widget.property;
-    final colorScheme = widget.colorScheme;
-    final isApartment =
+  Widget _buildImageSection(ColorScheme colorScheme, PropertyData property) {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: AspectRatio(
+            aspectRatio: 4 / 3,
+            child: Container(
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+              ),
+              child: Image.network(
+                property.imageUrl,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+                frameBuilder: (
+                  BuildContext context,
+                  Widget child,
+                  int? frame,
+                  bool wasSynchronouslyLoaded,
+                ) {
+                  if (wasSynchronouslyLoaded) {
+                    return child;
+                  }
+
+                  if (frame != null) {
+                    return AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: child,
+                    );
+                  } else {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colorScheme.primary,
+                      ),
+                    );
+                  }
+                },
+                errorBuilder: (
+                  BuildContext context,
+                  Object error,
+                  StackTrace? stackTrace,
+                ) {
+                  return Center(
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      size: 48,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 12,
+          right: 12,
+          child: _buildSaveButton(colorScheme),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSaveButton(ColorScheme colorScheme) {
+    Color backgroundColor;
+    if (_isSaved) {
+      backgroundColor = colorScheme.primary;
+    } else {
+      backgroundColor = colorScheme.primary.withValues(alpha: 0.7);
+    }
+
+    Widget buttonChild;
+    if (_isLoading) {
+      buttonChild = Padding(
+        padding: const EdgeInsets.all(8),
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: Colors.white,
+        ),
+      );
+    } else {
+      IconData icon;
+      Color iconColor;
+
+      if (_isSaved) {
+        icon = Icons.bookmark;
+        iconColor = Colors.white;
+      } else {
+        icon = Icons.bookmark_add_outlined;
+        iconColor = Colors.tealAccent;
+      }
+
+      buttonChild = Icon(icon, color: iconColor, size: 18);
+    }
+
+    return GestureDetector(
+      onTap: _toggleSave,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          shape: BoxShape.circle,
+        ),
+        child: buttonChild,
+      ),
+    );
+  }
+
+  Widget _buildContentSection(
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+    PropertyData property,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTitleAndPrice(colorScheme, textTheme, property),
+          const SizedBox(height: 12),
+          _buildLocation(colorScheme, property),
+          const SizedBox(height: 16),
+          Divider(
+            height: 1,
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 12),
+          _buildFeaturesAndButton(colorScheme, property),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTitleAndPrice(
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+    PropertyData property,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _formatCategory(property.category),
+                style: TextStyle(
+                  color: colorScheme.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                property.title,
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Noto Sans Bengali',
+                ),
+              ),
+            ],
+          ),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              property.price,
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            Text(
+              "/ month",
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLocation(ColorScheme colorScheme, PropertyData property) {
+    return Row(
+      children: [
+        Icon(
+          Icons.location_on,
+          size: 18,
+          color: colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            property.location,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontFamily: 'Noto Sans Bengali',
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeaturesAndButton(
+    ColorScheme colorScheme,
+    PropertyData property,
+  ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Row(children: _buildFeatureChips(colorScheme, property)),
+        ),
+        ElevatedButton(
+          onPressed: _navigateToDetails,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: colorScheme.primary,
+            foregroundColor: colorScheme.onPrimary,
+            elevation: 4,
+            shadowColor: colorScheme.primary.withValues(alpha: 0.3),
+            shape: const StadiumBorder(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+            visualDensity: VisualDensity.compact,
+          ),
+          child: const Text(
+            "See Details",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildFeatureChips(
+    ColorScheme colorScheme,
+    PropertyData property,
+  ) {
+    bool isApartment =
         property.category == 'family' || property.category == 'bachelor';
 
-    List<_FeatureChip> chips = [];
+    List<Widget> chips = [];
 
     if (isApartment) {
       if (property.bedroomCount != null) {
-        chips.add(
-          _FeatureChip(
-            icon: Icons.bed,
-            text: '${property.bedroomCount} Bed',
-            colorScheme: colorScheme,
-          ),
-        );
+        chips.add(FeatureChip(
+          icon: Icons.bed,
+          text: '${property.bedroomCount} Bed',
+          colorScheme: colorScheme,
+        ));
       }
       if (property.bathroomCount != null) {
-        chips.add(
-          _FeatureChip(
-            icon: Icons.bathtub_outlined,
-            text: '${property.bathroomCount} Bath',
-            colorScheme: colorScheme,
-          ),
-        );
+        chips.add(FeatureChip(
+          icon: Icons.bathtub_outlined,
+          text: '${property.bathroomCount} Bath',
+          colorScheme: colorScheme,
+        ));
       }
     } else {
-      final amenities = property.amenities ?? [];
-      chips = amenities
-          .take(2)
-          .map(
-            (amenity) => _FeatureChip(
-              icon: _getAmenityIcon(amenity),
-              text: amenity,
-              colorScheme: colorScheme,
-            ),
-          )
-          .toList();
+      List<String> amenities = property.amenities ?? [];
+      int count = 0;
+
+      for (int i = 0; i < amenities.length && count < 2; i++) {
+        String amenity = amenities[i];
+        chips.add(FeatureChip(
+          icon: _getAmenityIcon(amenity),
+          text: amenity,
+          colorScheme: colorScheme,
+        ));
+        count++;
+      }
     }
 
     return chips;
   }
-
-  IconData _getAmenityIcon(String amenity) {
-    switch (amenity.toLowerCase()) {
-      case 'wifi':
-        return Icons.wifi;
-      case 'ac':
-        return Icons.ac_unit;
-      case 'parking':
-        return Icons.local_parking;
-      case 'gym':
-        return Icons.fitness_center;
-      case 'pool':
-        return Icons.pool;
-      default:
-        return Icons.check_circle_outline;
-    }
-  }
 }
 
-class _FeatureChip extends StatelessWidget {
+class FeatureChip extends StatelessWidget {
   final IconData icon;
   final String text;
   final ColorScheme colorScheme;
 
-  const _FeatureChip({
+  const FeatureChip({
+    super.key,
     required this.icon,
     required this.text,
     required this.colorScheme,

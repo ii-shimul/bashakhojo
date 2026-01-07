@@ -6,14 +6,23 @@ class CustomSnackbar {
     String message, {
     bool isError = true,
   }) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red.shade600 : Colors.green.shade600,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
+    Color backgroundColor;
+    if (isError) {
+      backgroundColor = Colors.red.shade600;
+    } else {
+      backgroundColor = Colors.green.shade600;
+    }
+
+    SnackBar snackBar = SnackBar(
+      content: Text(message),
+      backgroundColor: backgroundColor,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
       ),
+      margin: const EdgeInsets.all(16),
     );
+
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 }

@@ -2,29 +2,33 @@ import 'package:bashakhojo/services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
+  final _supabase = SupabaseService.client;
+
   Future<AuthResponse> signUpWithEmailPass(
     String email,
     String password,
     String fullName,
   ) async {
-    return await SupabaseService.client.auth.signUp(
+    final response = await _supabase.auth.signUp(
       email: email,
       password: password,
       data: {'full_name': fullName},
     );
+    return response;
   }
 
   Future<AuthResponse> signInWithEmailPass(
     String email,
     String password,
   ) async {
-    return await SupabaseService.client.auth.signInWithPassword(
+    final response = await _supabase.auth.signInWithPassword(
       email: email,
       password: password,
     );
+    return response;
   }
 
-  void signOut() async {
-    await SupabaseService.client.auth.signOut();
+  Future<void> signOut() async {
+    await _supabase.auth.signOut();
   }
 }
