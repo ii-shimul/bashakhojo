@@ -145,8 +145,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildMenuItems(colorScheme, textTheme),
             const SizedBox(height: 32),
             _buildLogoutButton(colorScheme),
-            const SizedBox(height: 16),
-            _buildVersionText(colorScheme, textTheme),
             const SizedBox(height: 100),
           ],
         ),
@@ -325,15 +323,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           "Log Out",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
-      ),
-    );
-  }
-
-  Widget _buildVersionText(ColorScheme colorScheme, TextTheme textTheme) {
-    return Text(
-      "Version 2.4.0",
-      style: textTheme.labelSmall?.copyWith(
-        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
       ),
     );
   }

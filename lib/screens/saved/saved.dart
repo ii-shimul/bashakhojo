@@ -169,7 +169,7 @@ class _SavedScreenState extends State<SavedScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                "No Saved Properties",
+                "No Saved Listings",
                 style: textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: colorScheme.onSurface,
@@ -177,7 +177,7 @@ class _SavedScreenState extends State<SavedScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                "Properties you save will appear here",
+                "Listings you save will appear here",
                 style: textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),

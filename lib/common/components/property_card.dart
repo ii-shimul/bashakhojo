@@ -1,3 +1,4 @@
+import 'package:bashakhojo/common/utils/amenity_utils.dart';
 import 'package:bashakhojo/common/widgets/custom_snackbar.dart';
 import 'package:bashakhojo/screens/home/tenant_home.dart';
 import 'package:bashakhojo/screens/property_details/property_details.dart';
@@ -128,24 +129,6 @@ class _PropertyCardState extends State<PropertyCard> {
     );
   }
 
-  IconData _getAmenityIcon(String amenity) {
-    String lowerAmenity = amenity.toLowerCase();
-
-    if (lowerAmenity == 'wifi') {
-      return Icons.wifi;
-    } else if (lowerAmenity == 'ac') {
-      return Icons.ac_unit;
-    } else if (lowerAmenity == 'parking') {
-      return Icons.local_parking;
-    } else if (lowerAmenity == 'gym') {
-      return Icons.fitness_center;
-    } else if (lowerAmenity == 'pool') {
-      return Icons.pool;
-    } else {
-      return Icons.check_circle_outline;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     ColorScheme colorScheme = widget.colorScheme;
@@ -164,7 +147,7 @@ class _PropertyCardState extends State<PropertyCard> {
           ),
         ],
       ),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
         children: [
           _buildImageSection(colorScheme, property),
@@ -191,52 +174,50 @@ class _PropertyCardState extends State<PropertyCard> {
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: double.infinity,
-                frameBuilder: (
-                  BuildContext context,
-                  Widget child,
-                  int? frame,
-                  bool wasSynchronouslyLoaded,
-                ) {
-                  if (wasSynchronouslyLoaded) {
-                    return child;
-                  }
+                frameBuilder:
+                    (
+                      BuildContext context,
+                      Widget child,
+                      int? frame,
+                      bool wasSynchronouslyLoaded,
+                    ) {
+                      if (wasSynchronouslyLoaded) {
+                        return child;
+                      }
 
-                  if (frame != null) {
-                    return AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      child: child,
-                    );
-                  } else {
-                    return Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: colorScheme.primary,
-                      ),
-                    );
-                  }
-                },
-                errorBuilder: (
-                  BuildContext context,
-                  Object error,
-                  StackTrace? stackTrace,
-                ) {
-                  return Center(
-                    child: Icon(
-                      Icons.broken_image_outlined,
-                      size: 48,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  );
-                },
+                      if (frame != null) {
+                        return AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: child,
+                        );
+                      } else {
+                        return Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colorScheme.primary,
+                          ),
+                        );
+                      }
+                    },
+                errorBuilder:
+                    (
+                      BuildContext context,
+                      Object error,
+                      StackTrace? stackTrace,
+                    ) {
+                      return Center(
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          size: 48,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      );
+                    },
               ),
             ),
           ),
         ),
-        Positioned(
-          top: 12,
-          right: 12,
-          child: _buildSaveButton(colorScheme),
-        ),
+        Positioned(top: 12, right: 12, child: _buildSaveButton(colorScheme)),
       ],
     );
   }
@@ -253,10 +234,7 @@ class _PropertyCardState extends State<PropertyCard> {
     if (_isLoading) {
       buttonChild = Padding(
         padding: const EdgeInsets.all(8),
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: Colors.white,
-        ),
+        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
       );
     } else {
       IconData icon;
@@ -369,11 +347,7 @@ class _PropertyCardState extends State<PropertyCard> {
   Widget _buildLocation(ColorScheme colorScheme, PropertyData property) {
     return Row(
       children: [
-        Icon(
-          Icons.location_on,
-          size: 18,
-          color: colorScheme.onSurfaceVariant,
-        ),
+        Icon(Icons.location_on, size: 18, color: colorScheme.onSurfaceVariant),
         const SizedBox(width: 4),
         Expanded(
           child: Text(
@@ -424,25 +398,26 @@ class _PropertyCardState extends State<PropertyCard> {
     ColorScheme colorScheme,
     PropertyData property,
   ) {
-    bool isApartment =
-        property.category == 'family' || property.category == 'bachelor';
-
     List<Widget> chips = [];
 
-    if (isApartment) {
+    if (property.category == 'family' || property.category == 'bachelor') {
       if (property.bedroomCount != null) {
-        chips.add(FeatureChip(
-          icon: Icons.bed,
-          text: '${property.bedroomCount} Bed',
-          colorScheme: colorScheme,
-        ));
+        chips.add(
+          FeatureChip(
+            icon: Icons.bed,
+            text: '${property.bedroomCount} Bed',
+            colorScheme: colorScheme,
+          ),
+        );
       }
       if (property.bathroomCount != null) {
-        chips.add(FeatureChip(
-          icon: Icons.bathtub_outlined,
-          text: '${property.bathroomCount} Bath',
-          colorScheme: colorScheme,
-        ));
+        chips.add(
+          FeatureChip(
+            icon: Icons.bathtub_outlined,
+            text: '${property.bathroomCount} Bath',
+            colorScheme: colorScheme,
+          ),
+        );
       }
     } else {
       List<String> amenities = property.amenities ?? [];
@@ -450,11 +425,13 @@ class _PropertyCardState extends State<PropertyCard> {
 
       for (int i = 0; i < amenities.length && count < 2; i++) {
         String amenity = amenities[i];
-        chips.add(FeatureChip(
-          icon: _getAmenityIcon(amenity),
-          text: amenity,
-          colorScheme: colorScheme,
-        ));
+        chips.add(
+          FeatureChip(
+            icon: getAmenityIcon(amenity),
+            text: amenity,
+            colorScheme: colorScheme,
+          ),
+        );
         count++;
       }
     }

@@ -149,6 +149,7 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> {
     }
 
     return CustomScrollView(
+      scrollBehavior: ScrollBehavior(),
       slivers: [
         SliverToBoxAdapter(child: SizedBox(height: topPadding + 16)),
         SliverToBoxAdapter(
@@ -158,7 +159,7 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> {
             horizontalPadding: horizontalPadding,
           ),
         ),
-        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        const SliverToBoxAdapter(child: SizedBox(height: 20)),
         SliverToBoxAdapter(
           child: SearchBarSection(
             colorScheme: colorScheme,
@@ -169,7 +170,7 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> {
             searchQuery: _searchQuery,
           ),
         ),
-        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        const SliverToBoxAdapter(child: SizedBox(height: 20)),
         SliverToBoxAdapter(
           child: CategoryChips(
             categories: _categories,
@@ -179,9 +180,9 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> {
             horizontalPadding: horizontalPadding,
           ),
         ),
-        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        const SliverToBoxAdapter(child: SizedBox(height: 10)),
         _buildPropertiesSection(colorScheme, textTheme, horizontalPadding),
-        const SliverToBoxAdapter(child: SizedBox(height: 120)),
+        const SliverToBoxAdapter(child: SizedBox(height: 100)),
       ],
     );
   }
@@ -393,13 +394,14 @@ class AppBarSection extends StatelessWidget {
 
   Widget _buildLogo() {
     return Container(
+      padding: EdgeInsets.all(5),
       width: 40,
       height: 40,
       decoration: BoxDecoration(
         color: colorScheme.primary.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
-      child: Icon(Icons.home_work, color: colorScheme.primary, size: 24),
+      child: Image.asset("assets/logo/logo.png"),
     );
   }
 
@@ -552,7 +554,7 @@ class CategoryChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 48,
+      height: 38,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
@@ -585,17 +587,6 @@ class CategoryChips extends StatelessWidget {
       borderColor = colorScheme.outlineVariant.withValues(alpha: 0.5);
     }
 
-    List<BoxShadow>? boxShadow;
-    if (isSelected) {
-      boxShadow = [
-        BoxShadow(
-          color: colorScheme.primary.withValues(alpha: 0.3),
-          blurRadius: 8,
-          offset: const Offset(0, 4),
-        ),
-      ];
-    }
-
     Color iconColor;
     if (isSelected) {
       iconColor = colorScheme.onPrimary;
@@ -617,13 +608,12 @@ class CategoryChips extends StatelessWidget {
       borderRadius: BorderRadius.circular(100),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 15),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(100),
           border: Border.all(color: borderColor),
-          boxShadow: boxShadow,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

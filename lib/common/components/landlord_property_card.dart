@@ -1,3 +1,4 @@
+import 'package:bashakhojo/common/utils/amenity_utils.dart';
 import 'package:bashakhojo/common/widgets/custom_snackbar.dart';
 import 'package:bashakhojo/screens/home/tenant_home.dart';
 import 'package:bashakhojo/services/property_service.dart';
@@ -173,24 +174,6 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
     return capitalizedWords.join(' ');
   }
 
-  IconData _getAmenityIcon(String amenity) {
-    String lowerAmenity = amenity.toLowerCase();
-
-    if (lowerAmenity == 'wifi') {
-      return Icons.wifi;
-    } else if (lowerAmenity == 'ac') {
-      return Icons.ac_unit;
-    } else if (lowerAmenity == 'parking') {
-      return Icons.local_parking;
-    } else if (lowerAmenity == 'gym') {
-      return Icons.fitness_center;
-    } else if (lowerAmenity == 'pool') {
-      return Icons.pool;
-    } else {
-      return Icons.check_circle_outline;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     ColorScheme colorScheme = widget.colorScheme;
@@ -334,7 +317,7 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
             ),
             children: [
               TextSpan(
-                text: '/mo',
+                text: '/month',
                 style: TextStyle(
                   color: colorScheme.onSurfaceVariant,
                   fontSize: 12,
@@ -488,7 +471,7 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
         String amenity = amenities[i];
         chips.add(
           LandlordFeatureChip(
-            icon: _getAmenityIcon(amenity),
+            icon: getAmenityIcon(amenity),
             text: amenity,
             colorScheme: colorScheme,
           ),

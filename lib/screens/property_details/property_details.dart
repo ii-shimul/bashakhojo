@@ -1,3 +1,4 @@
+import 'package:bashakhojo/common/utils/amenity_utils.dart';
 import 'package:bashakhojo/common/widgets/custom_snackbar.dart';
 import 'package:bashakhojo/screens/home/tenant_home.dart';
 import 'package:bashakhojo/screens/inbox/chat_screen.dart';
@@ -202,24 +203,6 @@ class _PropertyDetailsState extends State<PropertyDetails> {
     return capitalizedWords.join(' ');
   }
 
-  IconData _getAmenityIcon(String amenity) {
-    String lowerAmenity = amenity.toLowerCase();
-
-    if (lowerAmenity == 'wifi') {
-      return Icons.wifi;
-    } else if (lowerAmenity == 'ac') {
-      return Icons.ac_unit;
-    } else if (lowerAmenity == 'parking') {
-      return Icons.local_parking;
-    } else if (lowerAmenity == 'gym') {
-      return Icons.fitness_center;
-    } else if (lowerAmenity == 'pool') {
-      return Icons.pool;
-    } else {
-      return Icons.check_circle_outline;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     ColorScheme colorScheme = Theme.of(context).colorScheme;
@@ -398,9 +381,7 @@ class _PropertyDetailsState extends State<PropertyDetails> {
               const SizedBox(height: 24),
               _buildSpecs(context),
               const SizedBox(height: 24),
-              Divider(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-              ),
+              Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
               const SizedBox(height: 24),
               _buildDescription(colorScheme, textTheme),
               _buildAmenities(context, colorScheme, textTheme),
@@ -560,7 +541,7 @@ class _PropertyDetailsState extends State<PropertyDetails> {
     List<Widget> amenityChips = [];
     for (int i = 0; i < widget.property.amenities!.length; i++) {
       String amenity = widget.property.amenities![i];
-      IconData icon = _getAmenityIcon(amenity);
+      IconData icon = getAmenityIcon(amenity);
       String label = _formatCategory(amenity);
 
       amenityChips.add(_buildAmenityChip(context, icon, label));

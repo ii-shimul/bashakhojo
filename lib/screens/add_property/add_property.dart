@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:bashakhojo/common/utils/amenity_utils.dart';
 import 'package:bashakhojo/common/widgets/custom_snackbar.dart';
 import 'package:bashakhojo/services/property_service.dart';
 import 'package:bashakhojo/services/supabase_service.dart';
@@ -41,15 +42,28 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
 
   List<String> get _amenitiesList {
     return [
-      'Gas Supply',
-      'CCTV',
+      'WiFi',
+      'AC',
+      'Parking',
+      'Bike Parking',
       'Lift',
       'Generator',
-      'WiFi',
-      'Parking',
-      'Rooftop Access',
-      'Security Guard',
-      'Fridge',
+      'Security',
+      'Furnished',
+      'Attached Bath',
+      'Shared Washroom',
+      'Balcony',
+      'Rooftop',
+      'Shared Kitchen',
+      'Kitchen',
+      'Line Gas',
+      'Water Filter',
+      'Tiled Floor',
+      'Meal System',
+      '24/7 Water',
+      'Open View',
+      'Drawing Room',
+      'Dining Space',
     ];
   }
 
@@ -256,28 +270,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     setState(() {
       _bathroomCount = value;
     });
-  }
-
-  IconData _getAmenityIcon(String name) {
-    if (name == 'Lift') {
-      return Icons.elevator;
-    } else if (name == 'Generator') {
-      return Icons.bolt;
-    } else if (name == 'WiFi') {
-      return Icons.wifi;
-    } else if (name == 'Parking') {
-      return Icons.local_parking;
-    } else if (name == 'Gas Supply') {
-      return Icons.local_fire_department;
-    } else if (name == 'CCTV') {
-      return Icons.videocam;
-    } else if (name == 'Rooftop Access') {
-      return Icons.roofing;
-    } else if (name == 'Security Guard') {
-      return Icons.security;
-    } else {
-      return Icons.check_circle_outline;
-    }
   }
 
   @override
@@ -1027,7 +1019,7 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
     if (isSelected) {
       icon = Icons.check;
     } else {
-      icon = _getAmenityIcon(amenity);
+      icon = getAmenityIcon(amenity);
     }
 
     Color iconColor;
