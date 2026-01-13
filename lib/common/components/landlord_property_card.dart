@@ -241,7 +241,7 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
     }
 
     return SizedBox(
-      height: 180,
+      height: 200,
       width: double.infinity,
       child: Stack(
         fit: StackFit.expand,
@@ -251,49 +251,46 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
             child: Image.network(
               property.imageUrl,
               fit: BoxFit.cover,
-              frameBuilder: (
-                BuildContext context,
-                Widget child,
-                int? frame,
-                bool wasSynchronouslyLoaded,
-              ) {
-                if (wasSynchronouslyLoaded) {
-                  return child;
-                }
+              width: double.infinity,
+              height: 200,
+              frameBuilder:
+                  (
+                    BuildContext context,
+                    Widget child,
+                    int? frame,
+                    bool wasSynchronouslyLoaded,
+                  ) {
+                    if (wasSynchronouslyLoaded) {
+                      return child;
+                    }
 
-                if (frame != null) {
-                  return AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: child,
-                  );
-                } else {
-                  return Container(
-                    color: colorScheme.surfaceContainerHighest,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: colorScheme.primary,
+                    if (frame != null) {
+                      return child;
+                    } else {
+                      return Container(
+                        color: colorScheme.surfaceContainerHighest,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+              errorBuilder:
+                  (BuildContext context, Object error, StackTrace? stackTrace) {
+                    return Container(
+                      color: colorScheme.surfaceContainerHighest,
+                      child: Center(
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          size: 48,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                  );
-                }
-              },
-              errorBuilder: (
-                BuildContext context,
-                Object error,
-                StackTrace? stackTrace,
-              ) {
-                return Container(
-                  color: colorScheme.surfaceContainerHighest,
-                  child: Center(
-                    child: Icon(
-                      Icons.broken_image_outlined,
-                      size: 48,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                );
-              },
+                    );
+                  },
             ),
           ),
           _buildGradientOverlay(),
@@ -310,10 +307,7 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Colors.transparent,
-            Colors.black.withValues(alpha: 0.6),
-          ],
+          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.6)],
           stops: const [0.5, 1.0],
         ),
       ),
@@ -441,11 +435,7 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
   Widget _buildLocation(ColorScheme colorScheme, PropertyData property) {
     return Row(
       children: [
-        Icon(
-          Icons.location_on,
-          size: 16,
-          color: colorScheme.onSurfaceVariant,
-        ),
+        Icon(Icons.location_on, size: 16, color: colorScheme.onSurfaceVariant),
         const SizedBox(width: 4),
         Expanded(
           child: Text(
@@ -473,18 +463,22 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
 
     if (isApartment) {
       if (property.bedroomCount != null) {
-        chips.add(LandlordFeatureChip(
-          icon: Icons.bed,
-          text: '${property.bedroomCount} Bed',
-          colorScheme: colorScheme,
-        ));
+        chips.add(
+          LandlordFeatureChip(
+            icon: Icons.bed,
+            text: '${property.bedroomCount} Bed',
+            colorScheme: colorScheme,
+          ),
+        );
       }
       if (property.bathroomCount != null) {
-        chips.add(LandlordFeatureChip(
-          icon: Icons.bathtub_outlined,
-          text: '${property.bathroomCount} Bath',
-          colorScheme: colorScheme,
-        ));
+        chips.add(
+          LandlordFeatureChip(
+            icon: Icons.bathtub_outlined,
+            text: '${property.bathroomCount} Bath',
+            colorScheme: colorScheme,
+          ),
+        );
       }
     } else {
       List<String> amenities = property.amenities ?? [];
@@ -492,11 +486,13 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
 
       for (int i = 0; i < amenities.length && count < 2; i++) {
         String amenity = amenities[i];
-        chips.add(LandlordFeatureChip(
-          icon: _getAmenityIcon(amenity),
-          text: amenity,
-          colorScheme: colorScheme,
-        ));
+        chips.add(
+          LandlordFeatureChip(
+            icon: _getAmenityIcon(amenity),
+            text: amenity,
+            colorScheme: colorScheme,
+          ),
+        );
         count++;
       }
     }
