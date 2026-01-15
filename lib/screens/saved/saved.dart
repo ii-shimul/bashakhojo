@@ -125,7 +125,7 @@ class _SavedScreenState extends State<SavedScreen> {
         children: [
           Text(
             "Saved Listings",
-            style: textTheme.titleLarge?.copyWith(
+            style: textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: colorScheme.onSurface,
             ),

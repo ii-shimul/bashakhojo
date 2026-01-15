@@ -139,15 +139,18 @@ class _PropertyCardState extends State<PropertyCard> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
+        border: BoxBorder.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
       child: Column(
         children: [
           _buildImageSection(colorScheme, property),

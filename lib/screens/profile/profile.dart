@@ -1,7 +1,12 @@
+import 'dart:io';
+
+import 'package:bashakhojo/common/widgets/custom_snackbar.dart';
 import 'package:bashakhojo/services/supabase_service.dart';
 import 'package:bashakhojo/services/user_role_notifier.dart';
 import 'package:bashakhojo/services/user_service.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -73,6 +78,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _changeAvatar() async {
+    ImagePicker picker = ImagePicker();
+    XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image == null) {
+      return;
+    }
+
+    final File file = File(image.path);
+    String ext = image.name.split('.').last.toLowerCase();
+    int timestamp = DateTime.now().millisecondsSinceEpoch;
+    String fileName = '${userId}_$timestamp.$ext';
+
+    try {
+      await SupabaseService.client.storage
+          .from("avatars")
+          .upload(
+            fileName,
+            file,
+            fileOptions: FileOptions(cacheControl: '3600', upsert: true),
+          );
+      final String publicUrl = SupabaseService.client.storage
+          .from("avatars")
+          .getPublicUrl(fileName);
+      await UserService.updateAvatar(publicUrl);
+      if (mounted) {
+        String oldFileName = _userProfile?['avatar_url'].split('/').last;
+        await SupabaseService.client.storage.from("avatars").remove([
+          oldFileName,
+        ]);
+        setState(() {
+          _userProfile?['avatar_url'] =
+              '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+        });
+        CustomSnackbar.show(
+          context,
+          'Avatar updated successfully!',
+          isError: false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomSnackbar.show(context, 'Error occurred: ${e.toString()}');
+      }
+    }
+  }
+
   Future<void> _logOut() async {
     try {
       await SupabaseService.client.auth.signOut();
@@ -113,8 +165,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            "Profile",
-            style: textTheme.titleLarge?.copyWith(
+            'Profile',
+            style: textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: colorScheme.onSurface,
             ),
@@ -200,7 +252,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             shape: const CircleBorder(),
             elevation: 4,
             child: InkWell(
-              onTap: () {},
+              onTap: _changeAvatar,
               customBorder: const CircleBorder(),
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
