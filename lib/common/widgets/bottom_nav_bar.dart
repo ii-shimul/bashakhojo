@@ -32,55 +32,38 @@ class BottomNavBar extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: _buildNavItems(),
+        children: [
+          NavItem(
+            icon: Icons.home_outlined,
+            activeIcon: Icons.home,
+            label: "Home",
+            isActive: selectedIndex == 0,
+            onTap: () => onItemTapped(0),
+          ),
+          NavItem(
+            icon: Icons.bookmark_border,
+            activeIcon: Icons.bookmark,
+            label: "Saved",
+            isActive: selectedIndex == 1,
+            onTap: () => onItemTapped(1),
+          ),
+          NavItem(
+            icon: Icons.chat_bubble_outline,
+            activeIcon: Icons.chat_bubble,
+            label: "Inbox",
+            isActive: selectedIndex == 2,
+            onTap: () => onItemTapped(2),
+          ),
+          NavItem(
+            icon: Icons.person_outline,
+            activeIcon: Icons.person,
+            label: "Profile",
+            isActive: selectedIndex == 3,
+            onTap: () => onItemTapped(3),
+          ),
+        ],
       ),
     );
-  }
-
-  List<Widget> _buildNavItems() {
-    List<Widget> items = [];
-
-    items.add(NavItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home,
-      label: "Home",
-      isActive: selectedIndex == 0,
-      onTap: () {
-        onItemTapped(0);
-      },
-    ));
-
-    items.add(NavItem(
-      icon: Icons.bookmark_border,
-      activeIcon: Icons.bookmark,
-      label: "Saved",
-      isActive: selectedIndex == 1,
-      onTap: () {
-        onItemTapped(1);
-      },
-    ));
-
-    items.add(NavItem(
-      icon: Icons.chat_bubble_outline,
-      activeIcon: Icons.chat_bubble,
-      label: "Inbox",
-      isActive: selectedIndex == 2,
-      onTap: () {
-        onItemTapped(2);
-      },
-    ));
-
-    items.add(NavItem(
-      icon: Icons.person_outline,
-      activeIcon: Icons.person,
-      label: "Profile",
-      isActive: selectedIndex == 3,
-      onTap: () {
-        onItemTapped(3);
-      },
-    ));
-
-    return items;
   }
 }
 
@@ -104,34 +87,6 @@ class NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-    IconData displayIcon;
-    if (isActive) {
-      displayIcon = activeIcon;
-    } else {
-      displayIcon = icon;
-    }
-
-    Color iconColor;
-    if (isActive) {
-      iconColor = colorScheme.primary;
-    } else {
-      iconColor = colorScheme.onSurfaceVariant;
-    }
-
-    FontWeight fontWeight;
-    if (isActive) {
-      fontWeight = FontWeight.bold;
-    } else {
-      fontWeight = FontWeight.w500;
-    }
-
-    Color textColor;
-    if (isActive) {
-      textColor = colorScheme.primary;
-    } else {
-      textColor = colorScheme.onSurfaceVariant;
-    }
-
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -140,14 +95,22 @@ class NavItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(displayIcon, color: iconColor, size: 26),
+            Icon(
+              isActive ? activeIcon : icon,
+              color: isActive
+                  ? colorScheme.primary
+                  : colorScheme.onSurfaceVariant,
+              size: 26,
+            ),
             const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
                 fontSize: 10,
-                fontWeight: fontWeight,
-                color: textColor,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                color: isActive
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
               ),
             ),
           ],

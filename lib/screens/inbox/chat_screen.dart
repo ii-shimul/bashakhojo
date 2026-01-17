@@ -116,9 +116,9 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send message: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to send message: $e')));
       }
     } finally {
       if (mounted) {
@@ -206,17 +206,14 @@ class _ChatScreenState extends State<ChatScreen> {
       avatarChild = Image.network(
         widget.otherUserAvatar!,
         fit: BoxFit.cover,
-        errorBuilder: (
-          BuildContext context,
-          Object error,
-          StackTrace? stackTrace,
-        ) {
-          return Icon(
-            Icons.person,
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          );
-        },
+        errorBuilder:
+            (BuildContext context, Object error, StackTrace? stackTrace) {
+              return Icon(
+                Icons.person,
+                size: 20,
+                color: colorScheme.onSurfaceVariant,
+              );
+            },
       );
     } else {
       avatarChild = Icon(
@@ -281,9 +278,7 @@ class _ChatScreenState extends State<ChatScreen> {
     List<Widget> children = [];
 
     if (showDate) {
-      children.add(
-        DateSeparator(date: messageTime, colorScheme: colorScheme),
-      );
+      children.add(DateSeparator(date: messageTime, colorScheme: colorScheme));
     }
 
     children.add(
@@ -301,6 +296,18 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildMessageInput(ColorScheme colorScheme) {
     double bottomPadding = MediaQuery.of(context).padding.bottom;
 
+    // Send button icon
+    Widget buttonIcon = _isSending
+        ? SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: colorScheme.onPrimary,
+            ),
+          )
+        : Icon(Icons.send, color: colorScheme.onPrimary, size: 20);
+
     return Container(
       padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomPadding),
       decoration: BoxDecoration(
@@ -313,69 +320,48 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       child: Row(
         children: [
-          Expanded(child: _buildTextField(colorScheme)),
+          // Text Field
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.3,
+                ),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: TextField(
+                controller: _messageController,
+                textCapitalization: TextCapitalization.sentences,
+                maxLines: 4,
+                minLines: 1,
+                style: TextStyle(color: colorScheme.onSurface),
+                decoration: InputDecoration(
+                  hintText: 'Type a message...',
+                  hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+                onSubmitted: (String value) => _sendMessage(),
+              ),
+            ),
+          ),
           const SizedBox(width: 8),
-          _buildSendButton(colorScheme),
+          // Send Button
+          Container(
+            decoration: BoxDecoration(
+              color: colorScheme.primary,
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              onPressed: _isSending ? null : _sendMessage,
+              icon: buttonIcon,
+            ),
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildTextField(ColorScheme colorScheme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: TextField(
-        controller: _messageController,
-        textCapitalization: TextCapitalization.sentences,
-        maxLines: 4,
-        minLines: 1,
-        style: TextStyle(color: colorScheme.onSurface),
-        decoration: InputDecoration(
-          hintText: 'Type a message...',
-          hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-        ),
-        onSubmitted: (String value) {
-          _sendMessage();
-        },
-      ),
-    );
-  }
-
-  Widget _buildSendButton(ColorScheme colorScheme) {
-    Widget buttonIcon;
-
-    if (_isSending) {
-      buttonIcon = SizedBox(
-        width: 20,
-        height: 20,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: colorScheme.onPrimary,
-        ),
-      );
-    } else {
-      buttonIcon = Icon(Icons.send, color: colorScheme.onPrimary, size: 20);
-    }
-
-    VoidCallback? onPressed;
-    if (!_isSending) {
-      onPressed = _sendMessage;
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.primary,
-        shape: BoxShape.circle,
-      ),
-      child: IconButton(onPressed: onPressed, icon: buttonIcon),
     );
   }
 }
@@ -419,11 +405,11 @@ class DateSeparator extends StatelessWidget {
   String _getDateText() {
     DateTime now = DateTime.now();
 
-    bool isToday = date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
+    bool isToday =
+        date.year == now.year && date.month == now.month && date.day == now.day;
 
-    bool isYesterday = date.year == now.year &&
+    bool isYesterday =
+        date.year == now.year &&
         date.month == now.month &&
         date.day == now.day - 1;
 
@@ -455,23 +441,21 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     double maxWidth = MediaQuery.of(context).size.width * 0.75;
 
-    Alignment alignment;
-    if (isMe) {
-      alignment = Alignment.centerRight;
-    } else {
-      alignment = Alignment.centerLeft;
-    }
+    Alignment alignment = isMe ? Alignment.centerRight : Alignment.centerLeft;
+    Color backgroundColor = isMe
+        ? colorScheme.primary
+        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
+    Color textColor = isMe ? colorScheme.onPrimary : colorScheme.onSurface;
+    Color timeColor = isMe
+        ? colorScheme.onPrimary.withValues(alpha: 0.7)
+        : colorScheme.onSurfaceVariant;
 
-    Color backgroundColor;
-    if (isMe) {
-      backgroundColor = colorScheme.primary;
-    } else {
-      backgroundColor = colorScheme.surfaceContainerHighest.withValues(
-        alpha: 0.5,
-      );
-    }
-
-    BorderRadius borderRadius = _getBorderRadius();
+    BorderRadius borderRadius = BorderRadius.only(
+      topLeft: const Radius.circular(16),
+      topRight: const Radius.circular(16),
+      bottomLeft: Radius.circular(isMe ? 16 : 4),
+      bottomRight: Radius.circular(isMe ? 4 : 16),
+    );
 
     return Align(
       alignment: alignment,
@@ -486,58 +470,15 @@ class MessageBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            _buildMessageText(),
+            Text(message, style: TextStyle(color: textColor, fontSize: 15)),
             const SizedBox(height: 4),
-            _buildTimeText(),
+            Text(
+              DateFormat('HH:mm').format(time),
+              style: TextStyle(fontSize: 10, color: timeColor),
+            ),
           ],
         ),
       ),
     );
-  }
-
-  BorderRadius _getBorderRadius() {
-    Radius topLeft = const Radius.circular(16);
-    Radius topRight = const Radius.circular(16);
-    Radius bottomLeft;
-    Radius bottomRight;
-
-    if (isMe) {
-      bottomLeft = const Radius.circular(16);
-      bottomRight = const Radius.circular(4);
-    } else {
-      bottomLeft = const Radius.circular(4);
-      bottomRight = const Radius.circular(16);
-    }
-
-    return BorderRadius.only(
-      topLeft: topLeft,
-      topRight: topRight,
-      bottomLeft: bottomLeft,
-      bottomRight: bottomRight,
-    );
-  }
-
-  Widget _buildMessageText() {
-    Color textColor;
-    if (isMe) {
-      textColor = colorScheme.onPrimary;
-    } else {
-      textColor = colorScheme.onSurface;
-    }
-
-    return Text(message, style: TextStyle(color: textColor, fontSize: 15));
-  }
-
-  Widget _buildTimeText() {
-    Color timeColor;
-    if (isMe) {
-      timeColor = colorScheme.onPrimary.withValues(alpha: 0.7);
-    } else {
-      timeColor = colorScheme.onSurfaceVariant;
-    }
-
-    String timeString = DateFormat('HH:mm').format(time);
-
-    return Text(timeString, style: TextStyle(fontSize: 10, color: timeColor));
   }
 }

@@ -639,154 +639,103 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
       children: [
         _buildLabel(colorScheme, "Property Type"),
         if (_isMobile)
-          _buildMobileTypePills(colorScheme)
+          // Mobile: Horizontal scrolling pills
+          SizedBox(
+            height: 44,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _categoryLabels.length,
+              separatorBuilder: (BuildContext context, int index) =>
+                  const SizedBox(width: 10),
+              itemBuilder: (BuildContext context, int index) {
+                bool isSelected = _selectedTypeIndex == index;
+                return GestureDetector(
+                  onTap: () => _selectType(index),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? colorScheme.primary
+                          : colorScheme.surfaceContainerHighest.withValues(
+                              alpha: 0.3,
+                            ),
+                      borderRadius: BorderRadius.circular(100),
+                      border: isSelected
+                          ? null
+                          : Border.all(
+                              color: colorScheme.outlineVariant.withValues(
+                                alpha: 0.5,
+                              ),
+                            ),
+                    ),
+                    child: Text(
+                      _categoryLabels[index],
+                      style: TextStyle(
+                        color: isSelected
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          )
         else
-          _buildDesktopTypePills(colorScheme),
-      ],
-    );
-  }
-
-  Widget _buildMobileTypePills(ColorScheme colorScheme) {
-    return SizedBox(
-      height: 44,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: _categoryLabels.length,
-        separatorBuilder: (BuildContext context, int index) {
-          return const SizedBox(width: 10);
-        },
-        itemBuilder: (BuildContext context, int index) {
-          return _buildMobileTypePill(
-            colorScheme,
-            _categoryLabels[index],
-            index,
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildMobileTypePill(ColorScheme colorScheme, String text, int index) {
-    bool isSelected = _selectedTypeIndex == index;
-
-    Color backgroundColor;
-    if (isSelected) {
-      backgroundColor = colorScheme.primary;
-    } else {
-      backgroundColor = colorScheme.surfaceContainerHighest.withValues(
-        alpha: 0.3,
-      );
-    }
-
-    Color textColor;
-    if (isSelected) {
-      textColor = colorScheme.onPrimary;
-    } else {
-      textColor = colorScheme.onSurfaceVariant;
-    }
-
-    return GestureDetector(
-      onTap: () {
-        _selectType(index);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(100),
-          border: isSelected
-              ? null
-              : Border.all(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-                ),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDesktopTypePills(ColorScheme colorScheme) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(children: _buildTypePills(colorScheme)),
-    );
-  }
-
-  List<Widget> _buildTypePills(ColorScheme colorScheme) {
-    List<Widget> pills = [];
-
-    for (int i = 0; i < _categoryLabels.length; i++) {
-      pills.add(_buildTypePill(colorScheme, _categoryLabels[i], i));
-    }
-
-    return pills;
-  }
-
-  Widget _buildTypePill(ColorScheme colorScheme, String text, int index) {
-    bool isSelected = _selectedTypeIndex == index;
-
-    Color backgroundColor;
-    if (isSelected) {
-      backgroundColor = colorScheme.surface;
-    } else {
-      backgroundColor = Colors.transparent;
-    }
-
-    Color textColor;
-    if (isSelected) {
-      textColor = colorScheme.primary;
-    } else {
-      textColor = colorScheme.onSurfaceVariant;
-    }
-
-    FontWeight fontWeight;
-    if (isSelected) {
-      fontWeight = FontWeight.bold;
-    } else {
-      fontWeight = FontWeight.w500;
-    }
-
-    List<BoxShadow>? boxShadow;
-    if (isSelected) {
-      boxShadow = [
-        BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4),
-      ];
-    }
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          _selectType(index);
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: boxShadow,
-          ),
-          child: Text(
-            text,
-            style: TextStyle(
-              color: textColor,
-              fontWeight: fontWeight,
-              fontSize: 12,
+          // Desktop: Segmented container
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: List.generate(_categoryLabels.length, (index) {
+                bool isSelected = _selectedTypeIndex == index;
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () => _selectType(index),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? colorScheme.surface
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 4,
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Text(
+                        _categoryLabels[index],
+                        style: TextStyle(
+                          color: isSelected
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
             ),
           ),
-        ),
-      ),
+      ],
     );
   }
 

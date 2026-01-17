@@ -240,169 +240,129 @@ class ConversationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     bool hasUnread = unreadCount > 0;
 
+    // Avatar
+    Widget avatarChild;
+    if (avatarUrl != null) {
+      avatarChild = Image.network(
+        avatarUrl!,
+        fit: BoxFit.cover,
+        errorBuilder:
+            (BuildContext context, Object error, StackTrace? stackTrace) {
+              return Icon(Icons.person, color: colorScheme.onSurfaceVariant);
+            },
+      );
+    } else {
+      avatarChild = Icon(Icons.person, color: colorScheme.onSurfaceVariant);
+    }
+
+    // Styling based on unread state
+    FontWeight nameWeight = hasUnread ? FontWeight.bold : FontWeight.w600;
+    Color messageColor = hasUnread
+        ? colorScheme.onSurface
+        : colorScheme.onSurfaceVariant;
+    FontWeight messageWeight = hasUnread ? FontWeight.w500 : FontWeight.normal;
+
     return InkWell(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
-            _buildAvatar(),
+            // Avatar
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: colorScheme.surfaceContainerHighest,
+                border: Border.all(
+                  color: colorScheme.primary.withValues(alpha: 0.2),
+                  width: 2,
+                ),
+              ),
+              child: ClipOval(child: avatarChild),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _buildContent(hasUnread)),
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Name and Time Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          name,
+                          style: textTheme.titleSmall?.copyWith(
+                            fontWeight: nameWeight,
+                            color: colorScheme.onSurface,
+                            fontFamily: 'Noto Sans Bengali',
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (timestamp != null)
+                        Text(
+                          timeago.format(timestamp!, locale: 'en_short'),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: hasUnread
+                                ? colorScheme.primary
+                                : colorScheme.onSurfaceVariant,
+                            fontWeight: hasUnread
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // Message and Badge Row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          lastMessage,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: messageColor,
+                            fontWeight: messageWeight,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (hasUnread) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            unreadCount > 99 ? '99+' : unreadCount.toString(),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildAvatar() {
-    Widget avatarChild;
-
-    if (avatarUrl != null) {
-      avatarChild = Image.network(
-        avatarUrl!,
-        fit: BoxFit.cover,
-        errorBuilder: (
-          BuildContext context,
-          Object error,
-          StackTrace? stackTrace,
-        ) {
-          return Icon(Icons.person, color: colorScheme.onSurfaceVariant);
-        },
-      );
-    } else {
-      avatarChild = Icon(Icons.person, color: colorScheme.onSurfaceVariant);
-    }
-
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: colorScheme.surfaceContainerHighest,
-        border: Border.all(
-          color: colorScheme.primary.withValues(alpha: 0.2),
-          width: 2,
-        ),
-      ),
-      child: ClipOval(child: avatarChild),
-    );
-  }
-
-  Widget _buildContent(bool hasUnread) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildNameAndTime(hasUnread),
-        const SizedBox(height: 4),
-        _buildMessageAndBadge(hasUnread),
-      ],
-    );
-  }
-
-  Widget _buildNameAndTime(bool hasUnread) {
-    FontWeight nameWeight;
-    if (hasUnread) {
-      nameWeight = FontWeight.bold;
-    } else {
-      nameWeight = FontWeight.w600;
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Text(
-            name,
-            style: textTheme.titleSmall?.copyWith(
-              fontWeight: nameWeight,
-              color: colorScheme.onSurface,
-              fontFamily: 'Noto Sans Bengali',
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        if (timestamp != null) _buildTimestamp(hasUnread),
-      ],
-    );
-  }
-
-  Widget _buildTimestamp(bool hasUnread) {
-    Color timeColor;
-    FontWeight timeWeight;
-
-    if (hasUnread) {
-      timeColor = colorScheme.primary;
-      timeWeight = FontWeight.w600;
-    } else {
-      timeColor = colorScheme.onSurfaceVariant;
-      timeWeight = FontWeight.normal;
-    }
-
-    return Text(
-      timeago.format(timestamp!, locale: 'en_short'),
-      style: TextStyle(fontSize: 12, color: timeColor, fontWeight: timeWeight),
-    );
-  }
-
-  Widget _buildMessageAndBadge(bool hasUnread) {
-    Color messageColor;
-    FontWeight messageWeight;
-
-    if (hasUnread) {
-      messageColor = colorScheme.onSurface;
-      messageWeight = FontWeight.w500;
-    } else {
-      messageColor = colorScheme.onSurfaceVariant;
-      messageWeight = FontWeight.normal;
-    }
-
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            lastMessage,
-            style: TextStyle(
-              fontSize: 14,
-              color: messageColor,
-              fontWeight: messageWeight,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        if (hasUnread) _buildUnreadBadge(),
-      ],
-    );
-  }
-
-  Widget _buildUnreadBadge() {
-    String badgeText;
-    if (unreadCount > 99) {
-      badgeText = '99+';
-    } else {
-      badgeText = unreadCount.toString();
-    }
-
-    return Row(
-      children: [
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: colorScheme.primary,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            badgeText,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onPrimary,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

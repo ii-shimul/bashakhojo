@@ -310,10 +310,10 @@ class SavedPropertyItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    String formattedCategory = _formatCategory(property.category);
+
     return InkWell(
-      onTap: () {
-        _onTap(context);
-      },
+      onTap: () => _onTap(context),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
@@ -330,128 +330,116 @@ class SavedPropertyItem extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(children: [_buildImage(), _buildDetails()]),
-      ),
-    );
-  }
-
-  Widget _buildImage() {
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(16),
-        bottomLeft: Radius.circular(16),
-      ),
-      child: Container(
-        width: 120,
-        height: 120,
-        decoration: BoxDecoration(color: colorScheme.surfaceContainerHighest),
-        child: Image.network(
-          property.imageUrl,
-          fit: BoxFit.cover,
-          errorBuilder:
-              (BuildContext context, Object error, StackTrace? stackTrace) {
-                return Icon(
-                  Icons.broken_image_outlined,
-                  size: 40,
-                  color: colorScheme.onSurfaceVariant,
-                );
-              },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetails() {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            _buildTitle(),
-            const SizedBox(height: 4),
-            _buildCategory(),
-            const SizedBox(height: 8),
-            _buildLocation(),
-            const SizedBox(height: 8),
-            _buildPrice(),
+            // Image
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                bottomLeft: Radius.circular(16),
+              ),
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                ),
+                child: Image.network(
+                  property.imageUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder:
+                      (
+                        BuildContext context,
+                        Object error,
+                        StackTrace? stackTrace,
+                      ) {
+                        return Icon(
+                          Icons.broken_image_outlined,
+                          size: 40,
+                          color: colorScheme.onSurfaceVariant,
+                        );
+                      },
+                ),
+              ),
+            ),
+            // Details
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title
+                    Text(
+                      property.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Noto Sans Bengali',
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Category
+                    Text(
+                      formattedCategory,
+                      style: TextStyle(
+                        color: colorScheme.primary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Location
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          size: 14,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            property.location,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 12,
+                              fontFamily: 'Noto Sans Bengali',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Price
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          property.price,
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                        Text(
+                          '/ month',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildTitle() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Text(
-            property.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Noto Sans Bengali',
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCategory() {
-    String formattedCategory = _formatCategory(property.category);
-
-    return Text(
-      formattedCategory,
-      style: TextStyle(
-        color: colorScheme.primary,
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-  }
-
-  Widget _buildLocation() {
-    return Row(
-      children: [
-        Icon(Icons.location_on, size: 14, color: colorScheme.onSurfaceVariant),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            property.location,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 12,
-              fontFamily: 'Noto Sans Bengali',
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPrice() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          property.price,
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.primary,
-          ),
-        ),
-        Text(
-          '/ month',
-          style: textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
     );
   }
 }

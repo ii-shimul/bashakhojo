@@ -108,9 +108,32 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 8),
                     _buildImage(colors),
                     const SizedBox(height: 24),
-                    _buildTitle(colors, textTheme),
+                    // Title
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          const TextSpan(text: "Welcome "),
+                          TextSpan(
+                            text: "Back",
+                            style: TextStyle(color: colors.primary),
+                          ),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                      style: textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: colors.onSurface,
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    _buildSubtitle(colors, textTheme),
+                    // Subtitle
+                    Text(
+                      "Sign in to continue your home search.",
+                      textAlign: TextAlign.center,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
                     const SizedBox(height: 32),
                     _buildEmailField(),
                     const SizedBox(height: 20),
@@ -138,53 +161,45 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildBackButton(colors),
-          _buildLogo(colors, textTheme),
+          // Back Button
+          Material(
+            color: colors.surface,
+            shape: const CircleBorder(),
+            elevation: 1,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () => Navigator.pop(context),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Icon(Icons.arrow_back, color: colors.onSurface),
+              ),
+            ),
+          ),
+          // Logo
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: colors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                "BASHAKHOJO",
+                style: textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                  color: colors.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(width: 40),
         ],
       ),
-    );
-  }
-
-  Widget _buildBackButton(ColorScheme colors) {
-    return Material(
-      color: colors.surface,
-      shape: const CircleBorder(),
-      elevation: 1,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: () {
-          Navigator.pop(context);
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Icon(Icons.arrow_back, color: colors.onSurface),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLogo(ColorScheme colors, TextTheme textTheme) {
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: colors.primary,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          "BASHAKHOJO",
-          style: textTheme.labelSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-            color: colors.onSurface.withValues(alpha: 0.6),
-          ),
-        ),
-      ],
     );
   }
 
@@ -214,30 +229,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildTitle(ColorScheme colors, TextTheme textTheme) {
-    return Text.rich(
-      TextSpan(
-        children: [
-          const TextSpan(text: "Welcome "),
-          TextSpan(text: "Back", style: TextStyle(color: colors.primary)),
-        ],
-      ),
-      textAlign: TextAlign.center,
-      style: textTheme.headlineMedium?.copyWith(
-        fontWeight: FontWeight.w800,
-        color: colors.onSurface,
-      ),
-    );
-  }
-
-  Widget _buildSubtitle(ColorScheme colors, TextTheme textTheme) {
-    return Text(
-      "Sign in to continue your home search.",
-      textAlign: TextAlign.center,
-      style: textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
     );
   }
 

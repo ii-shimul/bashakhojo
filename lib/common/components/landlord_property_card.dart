@@ -226,6 +226,17 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
       );
     }
 
+    // Status badge colors
+    Color badgeColor;
+    String badgeText;
+    if (_isAvailable) {
+      badgeColor = Colors.green.withValues(alpha: 0.9);
+      badgeText = 'AVAILABLE';
+    } else {
+      badgeColor = Colors.grey[700]!.withValues(alpha: 0.9);
+      badgeText = 'RENTED';
+    }
+
     return SizedBox(
       height: 250,
       width: double.infinity,
@@ -246,23 +257,18 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
                     int? frame,
                     bool wasSynchronouslyLoaded,
                   ) {
-                    if (wasSynchronouslyLoaded) {
+                    if (wasSynchronouslyLoaded || frame != null) {
                       return child;
                     }
-
-                    if (frame != null) {
-                      return child;
-                    } else {
-                      return Container(
-                        color: colorScheme.surfaceContainerHighest,
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colorScheme.primary,
-                          ),
+                    return Container(
+                      color: colorScheme.surfaceContainerHighest,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colorScheme.primary,
                         ),
-                      );
-                    }
+                      ),
+                    );
                   },
               errorBuilder:
                   (BuildContext context, Object error, StackTrace? stackTrace) {
@@ -279,91 +285,74 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
                   },
             ),
           ),
-          _buildGradientOverlay(),
-          _buildPriceTag(colorScheme, property),
-          _buildStatusBadge(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGradientOverlay() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.6)],
-          stops: const [0.5, 1.0],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPriceTag(ColorScheme colorScheme, PropertyData property) {
-    return Positioned(
-      bottom: 16,
-      left: 16,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: colorScheme.surface.withValues(alpha: 0.95),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: RichText(
-          text: TextSpan(
-            text: property.price,
-            style: TextStyle(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
+          // Gradient Overlay
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.6),
+                ],
+                stops: const [0.5, 1.0],
+              ),
             ),
-            children: [
-              TextSpan(
-                text: '/month',
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 12,
-                  fontWeight: FontWeight.normal,
+          ),
+          // Price Tag
+          Positioned(
+            bottom: 16,
+            left: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: colorScheme.surface.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: RichText(
+                text: TextSpan(
+                  text: property.price,
+                  style: TextStyle(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: '/month',
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge() {
-    Color badgeColor;
-    String badgeText;
-
-    if (_isAvailable) {
-      badgeColor = Colors.green.withValues(alpha: 0.9);
-      badgeText = 'AVAILABLE';
-    } else {
-      badgeColor = Colors.grey[700]!.withValues(alpha: 0.9);
-      badgeText = 'RENTED';
-    }
-
-    return Positioned(
-      top: 16,
-      right: 16,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: badgeColor,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(
-          badgeText,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
+          // Status Badge
+          Positioned(
+            top: 16,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: badgeColor,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                badgeText,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -378,11 +367,47 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildCategory(colorScheme, property),
+          // Category
+          Text(
+            _formatCategory(property.category),
+            style: TextStyle(
+              color: colorScheme.primary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 4),
-          _buildTitle(textTheme, property),
+          // Title
+          Text(
+            property.title,
+            style: textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Noto Sans Bengali',
+            ),
+          ),
           const SizedBox(height: 8),
-          _buildLocation(colorScheme, property),
+          // Location
+          Row(
+            children: [
+              Icon(
+                Icons.location_on,
+                size: 16,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  property.location,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontFamily: 'Noto Sans Bengali',
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
           Row(children: _buildFeatureChips(colorScheme, property)),
           const SizedBox(height: 16),
@@ -394,47 +419,6 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
           _buildActionsRow(colorScheme),
         ],
       ),
-    );
-  }
-
-  Widget _buildCategory(ColorScheme colorScheme, PropertyData property) {
-    return Text(
-      _formatCategory(property.category),
-      style: TextStyle(
-        color: colorScheme.primary,
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-  }
-
-  Widget _buildTitle(TextTheme textTheme, PropertyData property) {
-    return Text(
-      property.title,
-      style: textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.bold,
-        fontFamily: 'Noto Sans Bengali',
-      ),
-    );
-  }
-
-  Widget _buildLocation(ColorScheme colorScheme, PropertyData property) {
-    return Row(
-      children: [
-        Icon(Icons.location_on, size: 16, color: colorScheme.onSurfaceVariant),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            property.location,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontFamily: 'Noto Sans Bengali',
-              fontSize: 13,
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -487,75 +471,61 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
   }
 
   Widget _buildActionsRow(ColorScheme colorScheme) {
+    // Availability switch
+    Widget switchWidget = _isUpdating
+        ? SizedBox(
+            width: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: colorScheme.primary,
+            ),
+          )
+        : Switch.adaptive(
+            value: _isAvailable,
+            activeColor: colorScheme.primary,
+            onChanged: _toggleAvailability,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          );
+
+    String statusText = _isAvailable ? 'Available' : 'Rented';
+    Color statusColor = _isAvailable
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildAvailabilitySwitch(colorScheme),
-        _buildActionButtons(colorScheme),
-      ],
-    );
-  }
-
-  Widget _buildAvailabilitySwitch(ColorScheme colorScheme) {
-    Widget switchWidget;
-    if (_isUpdating) {
-      switchWidget = SizedBox(
-        width: 24,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: colorScheme.primary,
+        // Availability Switch
+        Row(
+          children: [
+            SizedBox(height: 24, child: switchWidget),
+            const SizedBox(width: 8),
+            Text(
+              statusText,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: statusColor,
+              ),
+            ),
+          ],
         ),
-      );
-    } else {
-      switchWidget = Switch.adaptive(
-        value: _isAvailable,
-        activeColor: colorScheme.primary,
-        onChanged: _toggleAvailability,
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      );
-    }
-
-    String statusText;
-    Color statusColor;
-
-    if (_isAvailable) {
-      statusText = 'Available';
-      statusColor = colorScheme.primary;
-    } else {
-      statusText = 'Rented';
-      statusColor = colorScheme.onSurfaceVariant;
-    }
-
-    return Row(
-      children: [
-        SizedBox(height: 24, child: switchWidget),
-        const SizedBox(width: 8),
-        Text(
-          statusText,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: statusColor,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButtons(ColorScheme colorScheme) {
-    return Row(
-      children: [
-        ActionButton(
-          icon: Icons.edit_outlined,
-          label: 'Edit',
-          colorScheme: colorScheme,
-          onTap: widget.onEdit,
-        ),
-        const SizedBox(width: 8),
-        IconActionButton(
-          icon: Icons.delete_outline,
-          color: Colors.red,
-          onTap: _deleteProperty,
+        // Action Buttons
+        Row(
+          children: [
+            ActionButton(
+              icon: Icons.edit_outlined,
+              label: 'Edit',
+              colorScheme: colorScheme,
+              onTap: widget.onEdit,
+            ),
+            const SizedBox(width: 8),
+            IconActionButton(
+              icon: Icons.delete_outline,
+              color: Colors.red,
+              onTap: _deleteProperty,
+            ),
+          ],
         ),
       ],
     );

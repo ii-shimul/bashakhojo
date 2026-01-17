@@ -274,53 +274,37 @@ class _LandlordHomeScreenState extends State<LandlordHomeScreen> {
     }
 
     if (_isMobile) {
-      return _buildMobileList(colorScheme, textTheme, horizontalPadding);
-    } else {
-      return _buildDesktopGrid(colorScheme, textTheme, horizontalPadding);
-    }
-  }
-
-  Widget _buildMobileList(
-    ColorScheme colorScheme,
-    TextTheme textTheme,
-    double horizontalPadding,
-  ) {
-    return SliverPadding(
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-      sliver: SliverList.separated(
-        itemCount: _properties.length,
-        separatorBuilder: (BuildContext context, int index) {
-          return const SizedBox(height: 20);
-        },
-        itemBuilder: (BuildContext context, int index) {
-          return _buildPropertyCard(index, colorScheme, textTheme);
-        },
-      ),
-    );
-  }
-
-  Widget _buildDesktopGrid(
-    ColorScheme colorScheme,
-    TextTheme textTheme,
-    double horizontalPadding,
-  ) {
-    return SliverPadding(
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-      sliver: SliverGrid(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: _gridCrossAxisCount,
-          mainAxisSpacing: 20,
-          crossAxisSpacing: 20,
-          childAspectRatio: 0.85,
-        ),
-        delegate: SliverChildBuilderDelegate(
-          (BuildContext context, int index) {
+      return SliverPadding(
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        sliver: SliverList.separated(
+          itemCount: _properties.length,
+          separatorBuilder: (BuildContext context, int index) {
+            return const SizedBox(height: 20);
+          },
+          itemBuilder: (BuildContext context, int index) {
             return _buildPropertyCard(index, colorScheme, textTheme);
           },
-          childCount: _properties.length,
         ),
-      ),
-    );
+      );
+    } else {
+      return SliverPadding(
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        sliver: SliverGrid(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: _gridCrossAxisCount,
+            mainAxisSpacing: 20,
+            crossAxisSpacing: 20,
+            childAspectRatio: 0.85,
+          ),
+          delegate: SliverChildBuilderDelegate((
+            BuildContext context,
+            int index,
+          ) {
+            return _buildPropertyCard(index, colorScheme, textTheme);
+          }, childCount: _properties.length),
+        ),
+      );
+    }
   }
 
   Widget _buildPropertyCard(
@@ -408,93 +392,62 @@ class LandlordAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              _buildProfileImage(),
-              const SizedBox(width: 12),
-              _buildGreeting(),
-            ],
-          ),
-          _buildNotificationButton(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileImage() {
     Widget avatarChild;
-
     if (profileImageUrl != null) {
       avatarChild = Image.network(
         profileImageUrl!,
         fit: BoxFit.cover,
-        errorBuilder: (
-          BuildContext context,
-          Object error,
-          StackTrace? stackTrace,
-        ) {
-          return Icon(Icons.person, color: colorScheme.onSurfaceVariant);
-        },
+        errorBuilder:
+            (BuildContext context, Object error, StackTrace? stackTrace) {
+              return Icon(Icons.person, color: colorScheme.onSurfaceVariant);
+            },
       );
     } else {
       avatarChild = Icon(Icons.person, color: colorScheme.onSurfaceVariant);
     }
 
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: colorScheme.primary.withAlpha(60),
-          width: 2,
-        ),
-        color: colorScheme.surfaceContainerHighest,
-      ),
-      child: ClipOval(child: avatarChild),
-    );
-  }
-
-  Widget _buildGreeting() {
     String displayName = userName ?? 'Loading...';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Hello,",
-          style: textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Noto Sans Bengali',
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: colorScheme.primary.withAlpha(60),
+                width: 2,
+              ),
+              color: colorScheme.surfaceContainerHighest,
+            ),
+            child: ClipOval(child: avatarChild),
           ),
-        ),
-        Text(
-          displayName,
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
-            fontFamily: 'Noto Sans Bengali',
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Hello,",
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Noto Sans Bengali',
+                ),
+              ),
+              Text(
+                displayName,
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                  fontFamily: 'Noto Sans Bengali',
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNotificationButton() {
-    return IconButton(
-      onPressed: () {},
-      icon: Badge(
-        smallSize: 8,
-        child: Icon(
-          Icons.notifications_outlined,
-          color: colorScheme.onSurfaceVariant,
-        ),
+        ],
       ),
     );
   }
@@ -522,101 +475,60 @@ class StatsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isMobile) {
-      return _buildMobileStats();
-    } else {
-      return _buildDesktopStats();
-    }
-  }
-
-  Widget _buildMobileStats() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-      child: Row(
-        children: [
-          Expanded(
-            child: StatCard(
-              colorScheme: colorScheme,
-              textTheme: textTheme,
-              icon: Icons.home_work,
-              label: 'Total',
-              value: totalProperties.toString(),
-              color: colorScheme.primary,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: StatCard(
-              colorScheme: colorScheme,
-              textTheme: textTheme,
-              icon: Icons.check_circle_outline,
-              label: 'Available',
-              value: availableCount.toString(),
-              color: Colors.green,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: StatCard(
-              colorScheme: colorScheme,
-              textTheme: textTheme,
-              icon: Icons.people_outline,
-              label: 'Rented',
-              value: rentedCount.toString(),
-              color: Colors.orange,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDesktopStats() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: Row(
-            children: [
-              Expanded(
-                child: StatCard(
-                  colorScheme: colorScheme,
-                  textTheme: textTheme,
-                  icon: Icons.home_work,
-                  label: 'Total',
-                  value: totalProperties.toString(),
-                  color: colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: StatCard(
-                  colorScheme: colorScheme,
-                  textTheme: textTheme,
-                  icon: Icons.check_circle_outline,
-                  label: 'Available',
-                  value: availableCount.toString(),
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: StatCard(
-                  colorScheme: colorScheme,
-                  textTheme: textTheme,
-                  icon: Icons.people_outline,
-                  label: 'Rented',
-                  value: rentedCount.toString(),
-                  color: Colors.orange,
-                ),
-              ),
-            ],
+    Widget statsRow = Row(
+      children: [
+        Expanded(
+          child: StatCard(
+            colorScheme: colorScheme,
+            textTheme: textTheme,
+            icon: Icons.home_work,
+            label: 'Total',
+            value: totalProperties.toString(),
+            color: colorScheme.primary,
           ),
         ),
-      ),
+        SizedBox(width: isMobile ? 12 : 16),
+        Expanded(
+          child: StatCard(
+            colorScheme: colorScheme,
+            textTheme: textTheme,
+            icon: Icons.check_circle_outline,
+            label: 'Available',
+            value: availableCount.toString(),
+            color: Colors.green,
+          ),
+        ),
+        SizedBox(width: isMobile ? 12 : 16),
+        Expanded(
+          child: StatCard(
+            colorScheme: colorScheme,
+            textTheme: textTheme,
+            icon: Icons.people_outline,
+            label: 'Rented',
+            value: rentedCount.toString(),
+            color: Colors.orange,
+          ),
+        ),
+      ],
     );
+
+    if (isMobile) {
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        child: statsRow,
+      );
+    } else {
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: statsRow,
+          ),
+        ),
+      );
+    }
   }
 }
 

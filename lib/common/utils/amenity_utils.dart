@@ -1,5 +1,32 @@
 import 'package:flutter/material.dart';
 
+const List<String> amenityList = [
+  'WiFi',
+  'AC',
+  'Parking',
+  'Bike Parking',
+  'Gym',
+  'Pool',
+  'Tiled Floor',
+  'Attached Bath',
+  'Shared Washroom',
+  'Balcony',
+  'Shared Kitchen',
+  'Kitchen',
+  'Generator',
+  'Security',
+  'Furnished',
+  'Lift',
+  'Water Filter',
+  'Meal System',
+  'Line Gas',
+  'Rooftop',
+  'Open View',
+  'Drawing Room',
+  'Dining Space',
+  '24/7 Water',
+];
+
 IconData getAmenityIcon(String amenity) {
   switch (amenity) {
     case 'WiFi':

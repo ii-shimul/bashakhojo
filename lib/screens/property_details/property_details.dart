@@ -565,6 +565,34 @@ class _PropertyDetailsState extends State<PropertyDetails> {
   }
 
   Widget _buildOwnerCard(ColorScheme colorScheme, TextTheme textTheme) {
+    if (_isLoadingOwner) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+            ),
+          ],
+        ),
+        child: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(8.0),
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    String? avatarUrl = _ownerProfile?['avatar_url'];
+    String fullName = _ownerProfile?['full_name'] ?? 'Property Owner';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -580,100 +608,119 @@ class _PropertyDetailsState extends State<PropertyDetails> {
           ),
         ],
       ),
-      child: _isLoadingOwner
-          ? const Center(
-              child: Padding(
-                padding: EdgeInsets.all(8.0),
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            )
-          : _buildOwnerRow(colorScheme, textTheme),
-    );
-  }
-
-  Widget _buildOwnerRow(ColorScheme colorScheme, TextTheme textTheme) {
-    String? avatarUrl = _ownerProfile?['avatar_url'];
-    String fullName = _ownerProfile?['full_name'] ?? 'Property Owner';
-
-    return Row(
-      children: [
-        Stack(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.grey[300],
-                image: avatarUrl != null
-                    ? DecorationImage(
-                        image: NetworkImage(avatarUrl),
-                        fit: BoxFit.cover,
-                      )
+      child: Row(
+        children: [
+          // Avatar with verified badge
+          Stack(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.grey[300],
+                  image: avatarUrl != null
+                      ? DecorationImage(
+                          image: NetworkImage(avatarUrl),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: avatarUrl == null
+                    ? Icon(Icons.person, color: colorScheme.onSurfaceVariant)
                     : null,
               ),
-              child: avatarUrl == null
-                  ? Icon(Icons.person, color: colorScheme.onSurfaceVariant)
-                  : null,
-            ),
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.verified, size: 16, color: Colors.blue),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                fullName,
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                "Landlord",
-                style: textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.verified,
+                    size: 16,
+                    color: Colors.blue,
+                  ),
                 ),
               ),
             ],
           ),
-        ),
-        if (!_isOwner)
-          GestureDetector(
-            onTap: _openChat,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.5,
+          const SizedBox(width: 12),
+          // Name and role
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fullName,
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              child: Icon(
-                Icons.chat_bubble_outline,
-                size: 20,
-                color: colorScheme.onSurface,
-              ),
+                Text(
+                  "Landlord",
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ),
-      ],
+          // Chat button
+          if (!_isOwner)
+            GestureDetector(
+              onTap: _openChat,
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
+                ),
+                child: Icon(
+                  Icons.chat_bubble_outline,
+                  size: 20,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
   Widget _buildBottomBar(ColorScheme colorScheme) {
+    // Message button child
+    Widget messageButtonChild = _isOpeningChat
+        ? const SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.white,
+            ),
+          )
+        : Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.message, size: 20, color: Colors.white),
+              SizedBox(width: 8),
+              Text(
+                "Message Landlord",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          );
+
     return Positioned(
       bottom: 0,
       left: 0,
@@ -690,71 +737,41 @@ class _PropertyDetailsState extends State<PropertyDetails> {
         ),
         child: Row(
           children: [
-            _buildCallButton(colorScheme),
-            const SizedBox(width: 16),
-            _buildMessageButton(colorScheme),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCallButton(ColorScheme colorScheme) {
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
-        color: colorScheme.surface,
-      ),
-      child: Icon(Icons.call, color: colorScheme.onSurface),
-    );
-  }
-
-  Widget _buildMessageButton(ColorScheme colorScheme) {
-    Widget buttonChild;
-
-    if (_isOpeningChat) {
-      buttonChild = const SizedBox(
-        width: 24,
-        height: 24,
-        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-      );
-    } else {
-      buttonChild = Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Icon(Icons.message, size: 20, color: Colors.white),
-          SizedBox(width: 8),
-          Text(
-            "Message Landlord",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+            // Call Button
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+                color: colorScheme.surface,
+              ),
+              child: Icon(Icons.call, color: colorScheme.onSurface),
             ),
-          ),
-        ],
-      );
-    }
-
-    return Expanded(
-      child: SizedBox(
-        height: 56,
-        child: ElevatedButton(
-          onPressed: _isOpeningChat ? null : _openChat,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: colorScheme.primary,
-            foregroundColor: Colors.black,
-            disabledBackgroundColor: colorScheme.primary.withValues(alpha: 0.5),
-            elevation: 8,
-            shadowColor: colorScheme.primary.withValues(alpha: 0.3),
-            shape: const StadiumBorder(),
-          ),
-          child: buttonChild,
+            const SizedBox(width: 16),
+            // Message Button
+            Expanded(
+              child: SizedBox(
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _isOpeningChat ? null : _openChat,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: Colors.black,
+                    disabledBackgroundColor: colorScheme.primary.withValues(
+                      alpha: 0.5,
+                    ),
+                    elevation: 8,
+                    shadowColor: colorScheme.primary.withValues(alpha: 0.3),
+                    shape: const StadiumBorder(),
+                  ),
+                  child: messageButtonChild,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

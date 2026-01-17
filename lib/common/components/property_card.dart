@@ -162,6 +162,22 @@ class _PropertyCardState extends State<PropertyCard> {
   }
 
   Widget _buildImageSection(ColorScheme colorScheme, PropertyData property) {
+    // Save button
+    Color buttonBgColor = _isSaved
+        ? colorScheme.primary
+        : colorScheme.primary.withValues(alpha: 0.7);
+    Widget saveButtonChild;
+    if (_isLoading) {
+      saveButtonChild = Padding(
+        padding: const EdgeInsets.all(8),
+        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+      );
+    } else {
+      IconData icon = _isSaved ? Icons.bookmark : Icons.bookmark_add_outlined;
+      Color iconColor = _isSaved ? Colors.white : Colors.tealAccent;
+      saveButtonChild = Icon(icon, color: iconColor, size: 18);
+    }
+
     return Stack(
       children: [
         ClipRRect(
@@ -184,23 +200,19 @@ class _PropertyCardState extends State<PropertyCard> {
                       int? frame,
                       bool wasSynchronouslyLoaded,
                     ) {
-                      if (wasSynchronouslyLoaded) {
-                        return child;
-                      }
-
+                      if (wasSynchronouslyLoaded) return child;
                       if (frame != null) {
                         return AnimatedSwitcher(
                           duration: const Duration(milliseconds: 200),
                           child: child,
                         );
-                      } else {
-                        return Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colorScheme.primary,
-                          ),
-                        );
                       }
+                      return Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colorScheme.primary,
+                        ),
+                      );
                     },
                 errorBuilder:
                     (
@@ -220,51 +232,24 @@ class _PropertyCardState extends State<PropertyCard> {
             ),
           ),
         ),
-        Positioned(top: 12, right: 12, child: _buildSaveButton(colorScheme)),
-      ],
-    );
-  }
-
-  Widget _buildSaveButton(ColorScheme colorScheme) {
-    Color backgroundColor;
-    if (_isSaved) {
-      backgroundColor = colorScheme.primary;
-    } else {
-      backgroundColor = colorScheme.primary.withValues(alpha: 0.7);
-    }
-
-    Widget buttonChild;
-    if (_isLoading) {
-      buttonChild = Padding(
-        padding: const EdgeInsets.all(8),
-        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-      );
-    } else {
-      IconData icon;
-      Color iconColor;
-
-      if (_isSaved) {
-        icon = Icons.bookmark;
-        iconColor = Colors.white;
-      } else {
-        icon = Icons.bookmark_add_outlined;
-        iconColor = Colors.tealAccent;
-      }
-
-      buttonChild = Icon(icon, color: iconColor, size: 18);
-    }
-
-    return GestureDetector(
-      onTap: _toggleSave,
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          shape: BoxShape.circle,
+        // Save Button
+        Positioned(
+          top: 12,
+          right: 12,
+          child: GestureDetector(
+            onTap: _toggleSave,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: buttonBgColor,
+                shape: BoxShape.circle,
+              ),
+              child: saveButtonChild,
+            ),
+          ),
         ),
-        child: buttonChild,
-      ),
+      ],
     );
   }
 
@@ -278,9 +263,77 @@ class _PropertyCardState extends State<PropertyCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTitleAndPrice(colorScheme, textTheme, property),
+          // Title and Price
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _formatCategory(property.category),
+                      style: TextStyle(
+                        color: colorScheme.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      property.title,
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Noto Sans Bengali',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    property.price,
+                    style: textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  Text(
+                    "/ month",
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
-          _buildLocation(colorScheme, property),
+          // Location
+          Row(
+            children: [
+              Icon(
+                Icons.location_on,
+                size: 18,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  property.location,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colorScheme.onSurfaceVariant,
+                    fontFamily: 'Noto Sans Bengali',
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
           Divider(
             height: 1,
@@ -290,80 +343,6 @@ class _PropertyCardState extends State<PropertyCard> {
           _buildFeaturesAndButton(colorScheme, property),
         ],
       ),
-    );
-  }
-
-  Widget _buildTitleAndPrice(
-    ColorScheme colorScheme,
-    TextTheme textTheme,
-    PropertyData property,
-  ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _formatCategory(property.category),
-                style: TextStyle(
-                  color: colorScheme.primary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                property.title,
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Noto Sans Bengali',
-                ),
-              ),
-            ],
-          ),
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              property.price,
-              style: textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            Text(
-              "/ month",
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLocation(ColorScheme colorScheme, PropertyData property) {
-    return Row(
-      children: [
-        Icon(Icons.location_on, size: 18, color: colorScheme.onSurfaceVariant),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            property.location,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontFamily: 'Noto Sans Bengali',
-              fontSize: 14,
-            ),
-          ),
-        ),
-      ],
     );
   }
 
