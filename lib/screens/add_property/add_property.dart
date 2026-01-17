@@ -639,7 +639,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
       children: [
         _buildLabel(colorScheme, "Property Type"),
         if (_isMobile)
-          // Mobile: Horizontal scrolling pills
           SizedBox(
             height: 44,
             child: ListView.separated(
@@ -687,7 +686,6 @@ class _AddPropertyScreenState extends State<AddPropertyScreen> {
             ),
           )
         else
-          // Desktop: Segmented container
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(

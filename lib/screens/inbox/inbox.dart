@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bashakhojo/common/widgets/custom_snackbar.dart';
 import 'package:bashakhojo/screens/inbox/chat_screen.dart';
 import 'package:bashakhojo/services/chat_service.dart';
 import 'package:bashakhojo/services/supabase_service.dart';
@@ -210,11 +211,13 @@ class _InboxScreenState extends State<InboxScreen> {
       onTap: () {
         _openConversation(conversation, otherUser);
       },
+      onDeleted: _loadConversations,
+      conversationId: conversationId,
     );
   }
 }
 
-class ConversationTile extends StatelessWidget {
+class ConversationTile extends StatefulWidget {
   final ColorScheme colorScheme;
   final TextTheme textTheme;
   final String name;
@@ -223,6 +226,8 @@ class ConversationTile extends StatelessWidget {
   final DateTime? timestamp;
   final int unreadCount;
   final VoidCallback onTap;
+  final VoidCallback onDeleted;
+  final String conversationId;
 
   const ConversationTile({
     super.key,
@@ -234,83 +239,149 @@ class ConversationTile extends StatelessWidget {
     this.timestamp,
     required this.unreadCount,
     required this.onTap,
+    required this.onDeleted,
+    required this.conversationId,
   });
 
   @override
-  Widget build(BuildContext context) {
-    bool hasUnread = unreadCount > 0;
+  State<ConversationTile> createState() => _ConversationTileState();
+}
 
-    // Avatar
+class _ConversationTileState extends State<ConversationTile> {
+  Future<void> _deleteChat() async {
+    bool? confirmed = await _showDeleteDialog();
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    try {
+      await ChatService.deleteConversation(widget.conversationId);
+
+      if (mounted) {
+        CustomSnackbar.show(
+          context,
+          'Chat deleted successfully',
+          isError: false,
+        );
+        widget.onDeleted();
+      }
+    } catch (e) {
+      debugPrint('Delete error: $e');
+
+      if (mounted) {
+        CustomSnackbar.show(context, 'Failed to delete the chat');
+      }
+    }
+  }
+
+  Future<bool?> _showDeleteDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Chat'),
+          content: const Text(
+            'Are you sure you want to delete this chat? This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    bool hasUnread = widget.unreadCount > 0;
+
     Widget avatarChild;
-    if (avatarUrl != null) {
+    if (widget.avatarUrl != null) {
       avatarChild = Image.network(
-        avatarUrl!,
+        widget.avatarUrl!,
         fit: BoxFit.cover,
         errorBuilder:
             (BuildContext context, Object error, StackTrace? stackTrace) {
-              return Icon(Icons.person, color: colorScheme.onSurfaceVariant);
+              return Icon(
+                Icons.person,
+                color: widget.colorScheme.onSurfaceVariant,
+              );
             },
       );
     } else {
-      avatarChild = Icon(Icons.person, color: colorScheme.onSurfaceVariant);
+      avatarChild = Icon(
+        Icons.person,
+        color: widget.colorScheme.onSurfaceVariant,
+      );
     }
 
-    // Styling based on unread state
     FontWeight nameWeight = hasUnread ? FontWeight.bold : FontWeight.w600;
     Color messageColor = hasUnread
-        ? colorScheme.onSurface
-        : colorScheme.onSurfaceVariant;
+        ? widget.colorScheme.onSurface
+        : widget.colorScheme.onSurfaceVariant;
     FontWeight messageWeight = hasUnread ? FontWeight.w500 : FontWeight.normal;
 
     return InkWell(
-      onTap: onTap,
+      onLongPress: _deleteChat,
+      onTap: widget.onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
-            // Avatar
             Container(
               width: 56,
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: colorScheme.surfaceContainerHighest,
+                color: widget.colorScheme.surfaceContainerHighest,
                 border: Border.all(
-                  color: colorScheme.primary.withValues(alpha: 0.2),
+                  color: widget.colorScheme.primary.withValues(alpha: 0.2),
                   width: 2,
                 ),
               ),
               child: ClipOval(child: avatarChild),
             ),
             const SizedBox(width: 12),
-            // Content
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Name and Time Row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Text(
-                          name,
-                          style: textTheme.titleSmall?.copyWith(
+                          widget.name,
+                          style: widget.textTheme.titleSmall?.copyWith(
                             fontWeight: nameWeight,
-                            color: colorScheme.onSurface,
+                            color: widget.colorScheme.onSurface,
                             fontFamily: 'Noto Sans Bengali',
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (timestamp != null)
+                      if (widget.timestamp != null)
                         Text(
-                          timeago.format(timestamp!, locale: 'en_short'),
+                          timeago.format(widget.timestamp!, locale: 'en_short'),
                           style: TextStyle(
                             fontSize: 12,
                             color: hasUnread
-                                ? colorScheme.primary
-                                : colorScheme.onSurfaceVariant,
+                                ? widget.colorScheme.primary
+                                : widget.colorScheme.onSurfaceVariant,
                             fontWeight: hasUnread
                                 ? FontWeight.w600
                                 : FontWeight.normal,
@@ -319,12 +390,12 @@ class ConversationTile extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  // Message and Badge Row
+
                   Row(
                     children: [
                       Expanded(
                         child: Text(
-                          lastMessage,
+                          widget.lastMessage,
                           style: TextStyle(
                             fontSize: 14,
                             color: messageColor,
@@ -342,15 +413,17 @@ class ConversationTile extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: colorScheme.primary,
+                            color: widget.colorScheme.primary,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            unreadCount > 99 ? '99+' : unreadCount.toString(),
+                            widget.unreadCount > 99
+                                ? '99+'
+                                : widget.unreadCount.toString(),
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: colorScheme.onPrimary,
+                              color: widget.colorScheme.onPrimary,
                             ),
                           ),
                         ),

@@ -108,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 8),
                     _buildImage(colors),
                     const SizedBox(height: 24),
-                    // Title
+
                     Text.rich(
                       TextSpan(
                         children: [
@@ -126,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // Subtitle
+
                     Text(
                       "Sign in to continue your home search.",
                       textAlign: TextAlign.center,
@@ -161,7 +161,6 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Back Button
           Material(
             color: colors.surface,
             shape: const CircleBorder(),
@@ -175,7 +174,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          // Logo
+
           Row(
             children: [
               Container(

@@ -332,7 +332,7 @@ class SavedPropertyItem extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Image
+            //
             ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
@@ -362,14 +362,13 @@ class SavedPropertyItem extends StatelessWidget {
                 ),
               ),
             ),
-            // Details
+
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title
                     Text(
                       property.title,
                       maxLines: 1,
@@ -380,7 +379,7 @@ class SavedPropertyItem extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    // Category
+
                     Text(
                       formattedCategory,
                       style: TextStyle(
@@ -390,7 +389,7 @@ class SavedPropertyItem extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // Location
+
                     Row(
                       children: [
                         Icon(
@@ -414,7 +413,7 @@ class SavedPropertyItem extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // Price
+
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [

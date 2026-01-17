@@ -226,7 +226,6 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
       );
     }
 
-    // Status badge colors
     Color badgeColor;
     String badgeText;
     if (_isAvailable) {
@@ -285,7 +284,7 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
                   },
             ),
           ),
-          // Gradient Overlay
+
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -299,7 +298,7 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
               ),
             ),
           ),
-          // Price Tag
+
           Positioned(
             bottom: 16,
             left: 16,
@@ -331,7 +330,7 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
               ),
             ),
           ),
-          // Status Badge
+
           Positioned(
             top: 16,
             right: 16,
@@ -367,7 +366,6 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Category
           Text(
             _formatCategory(property.category),
             style: TextStyle(
@@ -377,7 +375,7 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
             ),
           ),
           const SizedBox(height: 4),
-          // Title
+
           Text(
             property.title,
             style: textTheme.titleMedium?.copyWith(
@@ -386,7 +384,7 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
             ),
           ),
           const SizedBox(height: 8),
-          // Location
+
           Row(
             children: [
               Icon(
@@ -471,7 +469,6 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
   }
 
   Widget _buildActionsRow(ColorScheme colorScheme) {
-    // Availability switch
     Widget switchWidget = _isUpdating
         ? SizedBox(
             width: 24,
@@ -495,7 +492,6 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Availability Switch
         Row(
           children: [
             SizedBox(height: 24, child: switchWidget),
@@ -510,7 +506,7 @@ class _LandlordPropertyCardState extends State<LandlordPropertyCard> {
             ),
           ],
         ),
-        // Action Buttons
+
         Row(
           children: [
             ActionButton(

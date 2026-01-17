@@ -6,15 +6,21 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class ChatScreen extends StatefulWidget {
-  final String conversationId;
+  final String? conversationId;
+  final String? tenantId;
+  final String? landlordId;
   final String otherUserName;
   final String? otherUserAvatar;
+  final String? defaultMessage;
 
   const ChatScreen({
     super.key,
-    required this.conversationId,
+    this.conversationId,
+    this.tenantId,
+    this.landlordId,
     required this.otherUserName,
     this.otherUserAvatar,
+    this.defaultMessage,
   });
 
   @override
@@ -24,20 +30,64 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final TextEditingController _messageController = TextEditingController();
+  late final TextEditingController _messageController;
   final ScrollController _scrollController = ScrollController();
   List<Map<String, dynamic>> _messages = [];
   StreamSubscription<List<Map<String, dynamic>>>? _subscription;
   String? _currentUserId;
+  String? _conversationId;
   bool _isSending = false;
+  bool _isNewConversation = false;
 
   @override
   void initState() {
     super.initState();
+    _messageController = TextEditingController(
+      text: widget.defaultMessage ?? '',
+    );
     _currentUserId = SupabaseService.client.auth.currentUser?.id;
-    _loadMessages();
-    _subscribeToMessages();
-    _markAsRead();
+    _conversationId = widget.conversationId;
+
+    if (_conversationId != null) {
+      _isNewConversation = false;
+      _loadMessages();
+      _subscribeToMessages();
+      _markAsRead();
+    } else if (widget.tenantId != null && widget.landlordId != null) {
+      _checkExistingConversation();
+    }
+  }
+
+  Future<void> _checkExistingConversation() async {
+    try {
+      Map<String, dynamic>? existingConversation =
+          await ChatService.findConversation(
+            tenantId: widget.tenantId!,
+            landlordId: widget.landlordId!,
+          );
+
+      if (mounted) {
+        if (existingConversation != null) {
+          setState(() {
+            _conversationId = existingConversation['id'];
+            _isNewConversation = false;
+          });
+          _loadMessages();
+          _subscribeToMessages();
+          _markAsRead();
+        } else {
+          setState(() {
+            _isNewConversation = true;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isNewConversation = true;
+        });
+      }
+    }
   }
 
   @override
@@ -49,8 +99,10 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _loadMessages() async {
+    if (_conversationId == null) return;
+
     List<Map<String, dynamic>> messages = await ChatService.getMessages(
-      widget.conversationId,
+      _conversationId!,
     );
 
     if (mounted) {
@@ -62,8 +114,10 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _subscribeToMessages() {
+    if (_conversationId == null) return;
+
     Stream<List<Map<String, dynamic>>> stream = ChatService.subscribeToMessages(
-      widget.conversationId,
+      _conversationId!,
     );
 
     _subscription = stream.listen((List<Map<String, dynamic>> messages) {
@@ -78,7 +132,8 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _markAsRead() async {
-    await ChatService.markMessagesAsRead(widget.conversationId);
+    if (_conversationId == null) return;
+    await ChatService.markMessagesAsRead(_conversationId!);
   }
 
   void _scrollToBottom() {
@@ -110,8 +165,25 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageController.clear();
 
     try {
+      if (_isNewConversation && _conversationId == null) {
+        if (widget.tenantId == null || widget.landlordId == null) {
+          throw Exception('Missing tenant or landlord ID');
+        }
+
+        Map<String, dynamic> conversation =
+            await ChatService.getOrCreateConversation(
+              tenantId: widget.tenantId!,
+              landlordId: widget.landlordId!,
+            );
+
+        _conversationId = conversation['id'];
+        _isNewConversation = false;
+
+        _subscribeToMessages();
+      }
+
       await ChatService.sendMessage(
-        conversationId: widget.conversationId,
+        conversationId: _conversationId!,
         content: content,
       );
     } catch (e) {
@@ -242,7 +314,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_messages.isEmpty) {
       return Center(
         child: Text(
-          'No messages yet.\nSay hello! 👋',
+          'No messages yet.\n\nSay hello! 👋',
           textAlign: TextAlign.center,
           style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 16),
         ),
@@ -296,7 +368,6 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildMessageInput(ColorScheme colorScheme) {
     double bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    // Send button icon
     Widget buttonIcon = _isSending
         ? SizedBox(
             width: 20,
@@ -320,36 +391,39 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       child: Row(
         children: [
-          // Text Field
           Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.3,
-                ),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: TextField(
-                controller: _messageController,
-                textCapitalization: TextCapitalization.sentences,
-                maxLines: 4,
-                minLines: 1,
-                style: TextStyle(color: colorScheme.onSurface),
-                decoration: InputDecoration(
-                  hintText: 'Type a message...',
-                  hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.3,
                   ),
+                  borderRadius: BorderRadius.circular(24),
                 ),
-                onSubmitted: (String value) => _sendMessage(),
+                child: TextField(
+                  controller: _messageController,
+                  textCapitalization: TextCapitalization.sentences,
+                  maxLines: 4,
+                  minLines: 1,
+                  enabled: true,
+                  style: TextStyle(color: colorScheme.onSurface),
+                  decoration: InputDecoration(
+                    hintText: 'Type a message...',
+                    hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  onSubmitted: (String value) => _sendMessage(),
+                ),
               ),
             ),
           ),
           const SizedBox(width: 8),
-          // Send Button
+
           Container(
             decoration: BoxDecoration(
               color: colorScheme.primary,

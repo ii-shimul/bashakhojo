@@ -343,8 +343,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildMenuItems(ColorScheme colorScheme, TextTheme textTheme) {
     return Column(
       children: [
-        _buildMenuItem(context, Icons.calendar_month, "My Bookings"),
-        const SizedBox(height: 12),
         _buildMenuItem(context, Icons.favorite_border, "Saved Homes"),
         const SizedBox(height: 12),
         _buildMenuItem(context, Icons.credit_card, "Payments"),

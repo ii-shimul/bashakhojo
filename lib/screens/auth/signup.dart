@@ -138,7 +138,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: 8),
                     _buildImage(colors),
                     const SizedBox(height: 24),
-                    // Title
+
                     Text.rich(
                       TextSpan(
                         children: [
@@ -156,7 +156,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // Subtitle
+
                     Text(
                       "Find your perfect home in Bangladesh.",
                       textAlign: TextAlign.center,
@@ -191,7 +191,6 @@ class _SignupScreenState extends State<SignupScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Back Button
           Material(
             color: colors.surface,
             shape: const CircleBorder(),
@@ -205,7 +204,7 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
             ),
           ),
-          // Logo
+
           Row(
             children: [
               Container(

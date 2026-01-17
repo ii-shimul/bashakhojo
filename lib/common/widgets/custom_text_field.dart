@@ -26,7 +26,6 @@ class CustomTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-    // Suffix icon for password visibility toggle
     Widget? suffixIcon;
     if (isPassword) {
       suffixIcon = IconButton(
@@ -42,7 +41,6 @@ class CustomTextField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Label
         Padding(
           padding: const EdgeInsets.only(left: 16, bottom: 8),
           child: Text(
@@ -55,7 +53,7 @@ class CustomTextField extends StatelessWidget {
             ),
           ),
         ),
-        // Text Field
+
         TextFormField(
           controller: controller,
           obscureText: isObscure,

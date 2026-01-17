@@ -28,7 +28,7 @@ class ChatService {
     return conversations;
   }
 
-  static Future<Map<String, dynamic>> getOrCreateConversation({
+  static Future<Map<String, dynamic>?> findConversation({
     required String tenantId,
     required String landlordId,
   }) async {
@@ -38,6 +38,25 @@ class ChatService {
         .eq('tenant_id', tenantId)
         .eq('landlord_id', landlordId)
         .maybeSingle();
+
+    return existingConversation;
+  }
+
+  static Future<void> deleteConversation(String conversationId) async {
+    await SupabaseService.client
+        .from("conversations")
+        .delete()
+        .eq("id", conversationId);
+  }
+
+  static Future<Map<String, dynamic>> getOrCreateConversation({
+    required String tenantId,
+    required String landlordId,
+  }) async {
+    final existingConversation = await findConversation(
+      tenantId: tenantId,
+      landlordId: landlordId,
+    );
 
     if (existingConversation != null) {
       return existingConversation;

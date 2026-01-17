@@ -162,7 +162,6 @@ class _PropertyCardState extends State<PropertyCard> {
   }
 
   Widget _buildImageSection(ColorScheme colorScheme, PropertyData property) {
-    // Save button
     Color buttonBgColor = _isSaved
         ? colorScheme.primary
         : colorScheme.primary.withValues(alpha: 0.7);
@@ -232,7 +231,7 @@ class _PropertyCardState extends State<PropertyCard> {
             ),
           ),
         ),
-        // Save Button
+
         Positioned(
           top: 12,
           right: 12,
@@ -263,7 +262,6 @@ class _PropertyCardState extends State<PropertyCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title and Price
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -312,7 +310,7 @@ class _PropertyCardState extends State<PropertyCard> {
             ],
           ),
           const SizedBox(height: 12),
-          // Location
+
           Row(
             children: [
               Icon(

@@ -20,7 +20,6 @@ class AuthScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Logo
                     Container(
                       width: 64,
                       height: 64,
@@ -37,7 +36,7 @@ class AuthScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Title
+
                     Text(
                       "BashaKhojo",
                       style: TextStyle(
@@ -48,13 +47,13 @@ class AuthScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // Subtitle
+
                     Text(
                       "Find your perfect home",
                       style: TextStyle(fontSize: 18, color: Colors.black54),
                     ),
                     const SizedBox(height: 40),
-                    // Image
+
                     Container(
                       width: double.infinity,
                       height: 250,
@@ -68,7 +67,7 @@ class AuthScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 40),
-                    // Buttons
+
                     SizedBox(
                       width: double.infinity,
                       height: 56,
@@ -133,7 +132,7 @@ class AuthScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              // Terms Text
+
               Padding(
                 padding: const EdgeInsets.only(top: 24.0),
                 child: RichText(

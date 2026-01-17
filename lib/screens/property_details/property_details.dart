@@ -2,7 +2,6 @@ import 'package:bashakhojo/common/utils/amenity_utils.dart';
 import 'package:bashakhojo/common/widgets/custom_snackbar.dart';
 import 'package:bashakhojo/screens/home/tenant_home.dart';
 import 'package:bashakhojo/screens/inbox/chat_screen.dart';
-import 'package:bashakhojo/services/chat_service.dart';
 import 'package:bashakhojo/services/saved_properties_notifier.dart';
 import 'package:bashakhojo/services/supabase_service.dart';
 import 'package:bashakhojo/services/user_service.dart';
@@ -148,29 +147,23 @@ class _PropertyDetailsState extends State<PropertyDetails> {
     });
 
     try {
-      Map<String, dynamic> conversation =
-          await ChatService.getOrCreateConversation(
-            tenantId: _currentUserId!,
-            landlordId: widget.property.owner_id!,
-          );
+      String otherUserName = _ownerProfile?['full_name'] ?? 'Property Owner';
+      String? otherUserAvatar = _ownerProfile?['avatar_url'];
 
-      if (mounted) {
-        String otherUserName = _ownerProfile?['full_name'] ?? 'Property Owner';
-        String? otherUserAvatar = _ownerProfile?['avatar_url'];
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (BuildContext context) {
-              return ChatScreen(
-                conversationId: conversation['id'],
-                otherUserName: otherUserName,
-                otherUserAvatar: otherUserAvatar,
-              );
-            },
-          ),
-        );
-      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (BuildContext context) {
+            return ChatScreen(
+              tenantId: _currentUserId!,
+              landlordId: widget.property.owner_id!,
+              otherUserName: otherUserName,
+              otherUserAvatar: otherUserAvatar,
+              defaultMessage: "Hi, is ${widget.property.title} available?"
+            );
+          },
+        ),
+      );
     } catch (e) {
       if (mounted) {
         CustomSnackbar.show(context, 'Failed to open chat');
@@ -610,7 +603,6 @@ class _PropertyDetailsState extends State<PropertyDetails> {
       ),
       child: Row(
         children: [
-          // Avatar with verified badge
           Stack(
             children: [
               Container(
@@ -649,7 +641,7 @@ class _PropertyDetailsState extends State<PropertyDetails> {
             ],
           ),
           const SizedBox(width: 12),
-          // Name and role
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -669,7 +661,7 @@ class _PropertyDetailsState extends State<PropertyDetails> {
               ],
             ),
           ),
-          // Chat button
+
           if (!_isOwner)
             GestureDetector(
               onTap: _openChat,
@@ -695,7 +687,6 @@ class _PropertyDetailsState extends State<PropertyDetails> {
   }
 
   Widget _buildBottomBar(ColorScheme colorScheme) {
-    // Message button child
     Widget messageButtonChild = _isOpeningChat
         ? const SizedBox(
             width: 24,
@@ -737,7 +728,6 @@ class _PropertyDetailsState extends State<PropertyDetails> {
         ),
         child: Row(
           children: [
-            // Call Button
             Container(
               width: 56,
               height: 56,
@@ -751,7 +741,7 @@ class _PropertyDetailsState extends State<PropertyDetails> {
               child: Icon(Icons.call, color: colorScheme.onSurface),
             ),
             const SizedBox(width: 16),
-            // Message Button
+
             Expanded(
               child: SizedBox(
                 height: 56,
