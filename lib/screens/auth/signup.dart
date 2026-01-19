@@ -239,7 +239,7 @@ class _SignupScreenState extends State<SignupScreen> {
         borderRadius: BorderRadius.circular(32),
         color: colors.primary.withValues(alpha: 0.1),
         image: const DecorationImage(
-          image: AssetImage("assets/image/house-searching2.png"),
+          image: AssetImage("assets/image/house-searching.png"),
           fit: BoxFit.cover,
         ),
       ),
